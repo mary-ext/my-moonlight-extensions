@@ -74,7 +74,6 @@ we use conventional commits with these rules:
 - commit type describes the substance of the change as a whole, not a category to split it by. tests
   written for a feature ship in the `feat` commit; `chore` applies when test, comment, or JSDoc work
   is the entire change
-- no scopes; write `feat: ...` / `refactor: ...`, never `feat(runtime): ...`
 - append `!` after the type to mark breaking changes, e.g. `feat!:` or `refactor!:`
 
 ### documentation
