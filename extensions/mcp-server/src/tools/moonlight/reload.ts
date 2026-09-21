@@ -11,7 +11,7 @@ export const reload = defineTool({
 		mode: v.pipe(
 			v.optional(v.picklist(['reload', 'restart']), 'reload'),
 			v.description(
-				'reload: apply web code, patches and node.ts; restart: relaunch Discord for host.ts changes',
+				'reload: Reloads the web page; restart: Relaunches the app',
 			),
 		),
 	}),
@@ -24,12 +24,12 @@ export const reload = defineTool({
 		switch (mode) {
 			case 'reload': {
 				apply = () => location.reload();
-				message = `Reloading; new tool calls will wait. Use get_logs afterwards to check for patch errors.`;
+				message = `Reloading.`;
 				break;
 			}
 			case 'restart': {
 				apply = () => void getNatives().relaunch();
-				message = `Restarting Discord. The next tool call will wait for the new instance.`;
+				message = `Restarting.`;
 				break;
 			}
 		}
