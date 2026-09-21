@@ -1,5 +1,5 @@
-import { componentName } from './describe.ts';
-import { truncate } from './text.ts';
+import { componentName } from '#/lib/describe.ts';
+import { truncate } from '#/lib/text.ts';
 
 const getFiber = (el: Element): any => {
 	for (const key in el) {

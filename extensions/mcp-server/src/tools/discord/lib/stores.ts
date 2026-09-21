@@ -2,19 +2,6 @@ import { Store } from '@moonlight-mod/wp/discord/packages/flux';
 
 import { lazy } from './lazy.ts';
 
-/**
- * collects Discord's Flux stores.
- *
- * @returns stores keyed by name
- */
-export const allStores = (): Map<string, any> => {
-	const stores = new Map<string, any>();
-	for (const store of Store.getAll()) {
-		stores.set(store.getName(), store);
-	}
-	return stores;
-};
-
 const lazyStore = (name: string): { readonly value: any } => {
 	return lazy(() => {
 		for (const store of Store.getAll()) {

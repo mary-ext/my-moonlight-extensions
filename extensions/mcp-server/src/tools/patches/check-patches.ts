@@ -4,22 +4,18 @@ import type { IdentifiedPatch } from '@moonlight-mod/types';
 import * as v from 'valibot';
 
 import { getCapture } from '#/lib/capture.ts';
-import {
-	allModuleSources,
-	getOriginalSource,
-	getPatchedBy,
-	isModuleLoaded,
-	matcherToString,
-} from '#/lib/modules.ts';
+import { matcherToString } from '#/lib/source-matchers.ts';
+import { pluralize } from '#/lib/text.ts';
+import { defineTool } from '#/lib/tool.ts';
+import { allModuleSources, getOriginalSource, getPatchedBy, isModuleLoaded } from '#/lib/webpack-modules.ts';
+
 import {
 	compileError,
 	findMatchingModules,
 	formatResult,
 	runReplacements,
 	selectTargets,
-} from '#/lib/patching.ts';
-import { pluralize } from '#/lib/text.ts';
-import { defineTool } from '#/lib/tool.ts';
+} from './lib/patching.ts';
 
 interface PatchReport {
 	/** whether the prerequisite kept the patch from being applied */

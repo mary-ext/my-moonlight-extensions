@@ -1,14 +1,8 @@
 import * as v from 'valibot';
 
-import {
-	MatcherSchema,
-	ModuleIdSchema,
-	allModuleSources,
-	findOccurrences,
-	getOriginalSource,
-	toMatcher,
-} from '#/lib/modules.ts';
+import { MatcherSchema, findOccurrences, toMatcher } from '#/lib/source-matchers.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';
+import { ModuleIdSchema, allModuleSources, getOriginalSource } from '#/lib/webpack-modules.ts';
 
 // boundary checks prevent pairing one literal's closing quote with the next literal's opening quote
 const STRING_LITERAL = /(?<=^|[([{,:;=?!&|+\-*<>~\s])"((?:[^"\\\n]|\\.){4,80})"(?=$|[)\]},:;?+=!&|.\s])/g;

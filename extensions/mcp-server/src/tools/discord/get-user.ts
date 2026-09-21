@@ -2,12 +2,15 @@ import { getUser as fetchUser } from '@moonlight-mod/wp/discord/actions/UserActi
 import { ActivityTypes } from '@moonlight-mod/wp/discord/Constants';
 import * as v from 'valibot';
 
-import { formatDate, formatUser } from '#/lib/discord-format.ts';
-import { toApiError } from '#/lib/discord-http.ts';
-import { acquireDiscordLock } from '#/lib/discord-lock.ts';
-import { storeNames } from '#/lib/discord-lookup.ts';
-import { fetchProfile } from '#/lib/discord-modules.ts';
-import { snowflakeToDate } from '#/lib/discord-snowflake.ts';
+import { errorMessage, indent } from '#/lib/text.ts';
+import { defineTool } from '#/lib/tool.ts';
+
+import { formatDate, formatUser } from './lib/format.ts';
+import { toApiError } from './lib/http.ts';
+import { storeNames } from './lib/lookup.ts';
+import { fetchProfile } from './lib/modules.ts';
+import { acquireDiscordLock } from './lib/read-lock.ts';
+import { snowflakeToDate, SnowflakeSchema } from './lib/snowflake.ts';
 import {
 	GuildMemberStore,
 	GuildRoleStore,
@@ -16,9 +19,7 @@ import {
 	RelationshipStore,
 	UserProfileStore,
 	UserStore,
-} from '#/lib/flux.ts';
-import { errorMessage, indent } from '#/lib/text.ts';
-import { SnowflakeSchema, defineTool } from '#/lib/tool.ts';
+} from './lib/stores.ts';
 
 // omit non-visible relationship types: none, implicit and suggestion
 const RELATIONSHIPS: Record<number, string> = {
@@ -26,16 +27,6 @@ const RELATIONSHIPS: Record<number, string> = {
 	2: 'blocked',
 	3: 'incoming friend request',
 	4: 'outgoing friend request',
-};
-
-const describeActivity = (activity: any) => {
-	if (activity.type === ActivityTypes.CUSTOM_STATUS) {
-		return `custom status: ${[activity.emoji?.name, activity.state].filter(Boolean).join(' ')}`;
-	}
-
-	const kind = (ActivityTypes[activity.type] ?? 'activity').toLowerCase();
-	const detail = [activity.details, activity.state].filter(Boolean).join(', ');
-	return `${kind} ${activity.name}${detail ? ` (${detail})` : ''}`;
 };
 
 export const getUser = defineTool({
@@ -167,3 +158,13 @@ export const getUser = defineTool({
 		return lines.join('\n');
 	},
 });
+
+const describeActivity = (activity: any) => {
+	if (activity.type === ActivityTypes.CUSTOM_STATUS) {
+		return `custom status: ${[activity.emoji?.name, activity.state].filter(Boolean).join(' ')}`;
+	}
+
+	const kind = (ActivityTypes[activity.type] ?? 'activity').toLowerCase();
+	const detail = [activity.details, activity.state].filter(Boolean).join(', ');
+	return `${kind} ${activity.name}${detail ? ` (${detail})` : ''}`;
+};

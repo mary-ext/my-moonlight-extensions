@@ -1,20 +1,10 @@
 import * as v from 'valibot';
 
 import { describe, stringify } from '#/lib/describe.ts';
-import { componentChain, elementSummary, fiberName, queryElements } from '#/lib/dom.ts';
-import { iterateExports } from '#/lib/modules.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';
+import { iterateExports } from '#/lib/webpack-modules.ts';
 
-/** indexes loaded exports by identity to trace components to their modules */
-const buildExportIndex = () => {
-	const index = new Map<unknown, string>();
-	for (const [id, key, value] of iterateExports()) {
-		if (value != null && !index.has(value)) {
-			index.set(value, key === null ? id : `${id} (export ${key})`);
-		}
-	}
-	return index;
-};
+import { componentChain, elementSummary, fiberName, queryElements } from './lib/dom.ts';
 
 export const inspectReact = defineTool({
 	name: 'inspect_react',
@@ -66,3 +56,14 @@ export const inspectReact = defineTool({
 		});
 	},
 });
+
+/** indexes loaded exports by identity to trace components to their modules */
+const buildExportIndex = () => {
+	const index = new Map<unknown, string>();
+	for (const [id, key, value] of iterateExports()) {
+		if (value != null && !index.has(value)) {
+			index.set(value, key === null ? id : `${id} (export ${key})`);
+		}
+	}
+	return index;
+};

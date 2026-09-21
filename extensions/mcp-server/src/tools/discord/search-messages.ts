@@ -1,15 +1,16 @@
 import * as v from 'valibot';
 
-import { channelName, formatMessage } from '#/lib/discord-format.ts';
-import { omitUndefined, toApiError } from '#/lib/discord-http.ts';
-import { acquireDiscordLock } from '#/lib/discord-lock.ts';
-import { requireGuild, storeNames } from '#/lib/discord-lookup.ts';
-import { loadMessageMembers } from '#/lib/discord-members.ts';
-import { type SearchType, createMessageRecord, searchFetcher } from '#/lib/discord-modules.ts';
-import { dateToSnowflake } from '#/lib/discord-snowflake.ts';
-import { ChannelStore, UserStore } from '#/lib/flux.ts';
 import { pluralize } from '#/lib/text.ts';
-import { IntSchema, SnowflakeSchema, defineTool } from '#/lib/tool.ts';
+import { IntSchema, defineTool } from '#/lib/tool.ts';
+
+import { channelName, formatMessage } from './lib/format.ts';
+import { omitUndefined, toApiError } from './lib/http.ts';
+import { requireGuild, storeNames } from './lib/lookup.ts';
+import { loadMessageMembers } from './lib/message-members.ts';
+import { type SearchType, createMessageRecord, searchFetcher } from './lib/modules.ts';
+import { acquireDiscordLock } from './lib/read-lock.ts';
+import { dateToSnowflake, SnowflakeSchema } from './lib/snowflake.ts';
+import { ChannelStore, UserStore } from './lib/stores.ts';
 
 const SEARCH_TIMEOUT = 60_000;
 // fixed by the API
@@ -24,72 +25,6 @@ const DateSchema = (description: string) => {
 		v.check((s) => !Number.isNaN(Date.parse(s)), 'Expected a date, e.g. 2026-01-31 or 2026-01-31T12:00:00Z'),
 		v.transform((s) => new Date(s)),
 	);
-};
-
-interface SearchScope {
-	searchType: SearchType;
-	/** server ID for GUILD searches, private channel ID for CHANNEL searches */
-	searchId: string;
-	guildId: string | null;
-	channelIds: string[] | undefined;
-}
-
-const resolveScope = (guildId: string | undefined, channelId: string | undefined): SearchScope => {
-	if (channelId !== undefined) {
-		const channel = ChannelStore.value.getChannel(channelId);
-		if (!channel) {
-			throw new Error(`Unknown channel ${channelId}; use list_channels`);
-		}
-
-		if (channel.isPrivate()) {
-			if (guildId !== undefined) {
-				throw new Error(`Channel ${channelId} isn't in server ${guildId}`);
-			}
-			return { searchType: 'CHANNEL', searchId: channel.id, guildId: null, channelIds: undefined };
-		}
-
-		if (guildId !== undefined && guildId !== channel.guild_id) {
-			throw new Error(`Channel ${channelId} isn't in server ${guildId}`);
-		}
-		// Discord searches server channels through the server, as with `in:#channel`
-		return {
-			searchType: 'GUILD',
-			searchId: channel.guild_id,
-			guildId: channel.guild_id,
-			channelIds: [channel.id],
-		};
-	}
-
-	if (guildId !== undefined) {
-		requireGuild(guildId);
-		return { searchType: 'GUILD', searchId: guildId, guildId, channelIds: undefined };
-	}
-
-	throw new Error(`Pass guildId or channelId`);
-};
-
-const runSearch = ({ searchId, searchType }: SearchScope, query: object) => {
-	const SearchFetcher = searchFetcher.value;
-	const fetcher = new SearchFetcher(searchId, searchType, query);
-
-	return new Promise<any>((resolve, reject) => {
-		const timeout = setTimeout(() => {
-			fetcher.cancel();
-			reject(new Error(`Search timed out after ${SEARCH_TIMEOUT / 1000}s`));
-		}, SEARCH_TIMEOUT);
-
-		fetcher.fetch(
-			(res) => {
-				clearTimeout(timeout);
-				resolve(res.body);
-			},
-			() => {},
-			(e) => {
-				clearTimeout(timeout);
-				reject(toApiError(e));
-			},
-		);
-	});
 };
 
 export const searchMessages = defineTool({
@@ -214,3 +149,69 @@ export const searchMessages = defineTool({
 		return lines.join('\n');
 	},
 });
+
+interface SearchScope {
+	searchType: SearchType;
+	/** server ID for GUILD searches, private channel ID for CHANNEL searches */
+	searchId: string;
+	guildId: string | null;
+	channelIds: string[] | undefined;
+}
+
+const resolveScope = (guildId: string | undefined, channelId: string | undefined): SearchScope => {
+	if (channelId !== undefined) {
+		const channel = ChannelStore.value.getChannel(channelId);
+		if (!channel) {
+			throw new Error(`Unknown channel ${channelId}; use list_channels`);
+		}
+
+		if (channel.isPrivate()) {
+			if (guildId !== undefined) {
+				throw new Error(`Channel ${channelId} isn't in server ${guildId}`);
+			}
+			return { searchType: 'CHANNEL', searchId: channel.id, guildId: null, channelIds: undefined };
+		}
+
+		if (guildId !== undefined && guildId !== channel.guild_id) {
+			throw new Error(`Channel ${channelId} isn't in server ${guildId}`);
+		}
+		// Discord searches server channels through the server, as with `in:#channel`
+		return {
+			searchType: 'GUILD',
+			searchId: channel.guild_id,
+			guildId: channel.guild_id,
+			channelIds: [channel.id],
+		};
+	}
+
+	if (guildId !== undefined) {
+		requireGuild(guildId);
+		return { searchType: 'GUILD', searchId: guildId, guildId, channelIds: undefined };
+	}
+
+	throw new Error(`Pass guildId or channelId`);
+};
+
+const runSearch = ({ searchId, searchType }: SearchScope, query: object) => {
+	const SearchFetcher = searchFetcher.value;
+	const fetcher = new SearchFetcher(searchId, searchType, query);
+
+	return new Promise<any>((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			fetcher.cancel();
+			reject(new Error(`Search timed out after ${SEARCH_TIMEOUT / 1000}s`));
+		}, SEARCH_TIMEOUT);
+
+		fetcher.fetch(
+			(res) => {
+				clearTimeout(timeout);
+				resolve(res.body);
+			},
+			() => {},
+			(e) => {
+				clearTimeout(timeout);
+				reject(toApiError(e));
+			},
+		);
+	});
+};

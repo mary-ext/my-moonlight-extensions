@@ -1,16 +1,9 @@
 import * as v from 'valibot';
 
-import {
-	MatcherSchema,
-	allModuleSources,
-	excerpt,
-	findOccurrences,
-	matches,
-	moduleStatus,
-	toMatcher,
-} from '#/lib/modules.ts';
+import { MatcherSchema, excerpt, findOccurrences, matches, toMatcher } from '#/lib/source-matchers.ts';
 import { pluralize } from '#/lib/text.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';
+import { allModuleSources, moduleStatus } from '#/lib/webpack-modules.ts';
 
 export const searchModules = defineTool({
 	name: 'search_modules',

@@ -1,9 +1,10 @@
 import * as v from 'valibot';
 
-import { acquireDiscordLock } from '#/lib/discord-lock.ts';
-import { GuildMemberCountStore, GuildStore, SortedGuildStore } from '#/lib/flux.ts';
 import { pluralize } from '#/lib/text.ts';
 import { defineTool } from '#/lib/tool.ts';
+
+import { acquireDiscordLock } from './lib/read-lock.ts';
+import { GuildMemberCountStore, GuildStore, SortedGuildStore } from './lib/stores.ts';
 
 export const listGuilds = defineTool({
 	name: 'list_guilds',

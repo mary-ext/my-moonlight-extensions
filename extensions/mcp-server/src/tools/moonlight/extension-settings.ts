@@ -1,8 +1,9 @@
 import * as v from 'valibot';
 
 import { describe, stringify } from '#/lib/describe.ts';
-import { getExtension, isEnabledInConfig } from '#/lib/extensions.ts';
 import { defineTool } from '#/lib/tool.ts';
+
+import { getExtension, isEnabledInConfig } from './lib/extensions.ts';
 
 export const extensionSettings = defineTool({
 	name: 'extension_settings',

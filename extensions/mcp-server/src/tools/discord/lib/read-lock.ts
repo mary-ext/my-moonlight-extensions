@@ -1,5 +1,5 @@
 import { sleep } from './async.ts';
-import { GatewayConnectionStore } from './flux.ts';
+import { GatewayConnectionStore } from './stores.ts';
 
 const CONNECTION_TIMEOUT = 30_000;
 const CONNECTION_POLL = 250;

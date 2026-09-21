@@ -1,8 +1,9 @@
 import * as v from 'valibot';
 
 import { describe, stringify } from '#/lib/describe.ts';
-import { allStores } from '#/lib/flux.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';
+
+import { allStores } from './lib/stores.ts';
 
 export const inspectStore = defineTool({
 	name: 'inspect_store',

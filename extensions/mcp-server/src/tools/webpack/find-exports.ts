@@ -1,8 +1,8 @@
 import * as v from 'valibot';
 
 import { describe, stringify } from '#/lib/describe.ts';
-import { getMappedNames, iterateExports } from '#/lib/modules.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';
+import { getMappedNames, iterateExports } from '#/lib/webpack-modules.ts';
 
 const finders = {
 	props: (args: string[]) => (value: any) => typeof value === 'object' && args.every((key) => key in value),

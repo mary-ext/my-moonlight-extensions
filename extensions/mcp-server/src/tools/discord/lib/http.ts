@@ -1,6 +1,6 @@
 import { HTTP } from '@moonlight-mod/wp/discord/utils/HTTPUtils';
 
-import { truncate } from './text.ts';
+import { truncate } from '#/lib/text.ts';
 
 /**
  * formats a Discord request failure as an error.

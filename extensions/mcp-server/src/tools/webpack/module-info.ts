@@ -2,8 +2,14 @@ import spacepack from '@moonlight-mod/wp/spacepack_spacepack';
 import * as v from 'valibot';
 
 import { describe, stringify } from '#/lib/describe.ts';
-import { ModuleIdSchema, getMappedNames, getPatchedBy, isModuleLoaded, moduleExists } from '#/lib/modules.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';
+import {
+	ModuleIdSchema,
+	getMappedNames,
+	getPatchedBy,
+	isModuleLoaded,
+	moduleExists,
+} from '#/lib/webpack-modules.ts';
 
 export const moduleInfo = defineTool({
 	name: 'module_info',

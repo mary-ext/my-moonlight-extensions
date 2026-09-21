@@ -1,5 +1,5 @@
-import type { Names } from './discord-format.ts';
-import { ChannelStore, GuildMemberStore, GuildRoleStore, GuildStore, UserStore } from './flux.ts';
+import type { Names } from './format.ts';
+import { ChannelStore, GuildMemberStore, GuildRoleStore, GuildStore, UserStore } from './stores.ts';
 
 /**
  * provides name lookups from client stores and API mentions.

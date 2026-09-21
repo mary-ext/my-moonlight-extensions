@@ -1,8 +1,8 @@
 import * as v from 'valibot';
 
-import { isModuleLoaded } from '#/lib/modules.ts';
 import { pluralize } from '#/lib/text.ts';
 import { defineTool } from '#/lib/tool.ts';
+import { isModuleLoaded } from '#/lib/webpack-modules.ts';
 
 export const listMappings = defineTool({
 	name: 'list_mappings',

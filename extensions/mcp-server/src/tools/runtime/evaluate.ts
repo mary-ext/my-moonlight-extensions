@@ -4,23 +4,6 @@ import * as v from 'valibot';
 import { describe, stringify } from '#/lib/describe.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';
 
-const AsyncFunction: new (...args: string[]) => (...args: unknown[]) => Promise<unknown> =
-	Object.getPrototypeOf(async () => {}).constructor;
-
-const evaluate = (code: string) => {
-	// expressions return implicitly; statement bodies need an explicit return
-	let fn: (...args: unknown[]) => Promise<unknown>;
-	try {
-		fn = new AsyncFunction('spacepack', 'require', `return (\n${code}\n);`);
-	} catch (e) {
-		if (!(e instanceof SyntaxError)) {
-			throw e;
-		}
-		fn = new AsyncFunction('spacepack', 'require', code);
-	}
-	return fn(spacepack, spacepack.require);
-};
-
 export const evaluateTool = defineTool({
 	name: 'evaluate',
 	description: `Run JavaScript in Discord's renderer and preview the result.`,
@@ -37,3 +20,20 @@ export const evaluateTool = defineTool({
 		return stringify(describe(await evaluate(code), depth));
 	},
 });
+
+const AsyncFunction: new (...args: string[]) => (...args: unknown[]) => Promise<unknown> =
+	Object.getPrototypeOf(async () => {}).constructor;
+
+const evaluate = (code: string) => {
+	// expressions return implicitly; statement bodies need an explicit return
+	let fn: (...args: unknown[]) => Promise<unknown>;
+	try {
+		fn = new AsyncFunction('spacepack', 'require', `return (\n${code}\n);`);
+	} catch (e) {
+		if (!(e instanceof SyntaxError)) {
+			throw e;
+		}
+		fn = new AsyncFunction('spacepack', 'require', code);
+	}
+	return fn(spacepack, spacepack.require);
+};

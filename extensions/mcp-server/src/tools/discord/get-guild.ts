@@ -1,12 +1,13 @@
 import * as v from 'valibot';
 
-import { channelName, formatDate, formatUser } from '#/lib/discord-format.ts';
-import { acquireDiscordLock } from '#/lib/discord-lock.ts';
-import { requireGuild, storeNames } from '#/lib/discord-lookup.ts';
-import { snowflakeToDate } from '#/lib/discord-snowflake.ts';
-import { GuildMemberCountStore, GuildRoleStore } from '#/lib/flux.ts';
 import { pluralize } from '#/lib/text.ts';
-import { SnowflakeSchema, defineTool } from '#/lib/tool.ts';
+import { defineTool } from '#/lib/tool.ts';
+
+import { channelName, formatDate, formatUser } from './lib/format.ts';
+import { requireGuild, storeNames } from './lib/lookup.ts';
+import { acquireDiscordLock } from './lib/read-lock.ts';
+import { snowflakeToDate, SnowflakeSchema } from './lib/snowflake.ts';
+import { GuildMemberCountStore, GuildRoleStore } from './lib/stores.ts';
 
 export const getGuild = defineTool({
 	name: 'get_guild',

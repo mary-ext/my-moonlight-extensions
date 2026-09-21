@@ -1,4 +1,4 @@
-import { indent, oneLine } from './text.ts';
+import { indent, oneLine } from '#/lib/text.ts';
 
 const MAX_EMBED_TEXT = 300;
 

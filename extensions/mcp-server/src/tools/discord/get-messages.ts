@@ -1,77 +1,17 @@
 import { Endpoints } from '@moonlight-mod/wp/discord/Constants';
 import * as v from 'valibot';
 
-import { channelName, formatMessage } from '#/lib/discord-format.ts';
-import { discordGet } from '#/lib/discord-http.ts';
-import { acquireDiscordLock } from '#/lib/discord-lock.ts';
-import { storeNames } from '#/lib/discord-lookup.ts';
-import { loadMessageMembers } from '#/lib/discord-members.ts';
-import { createMessageRecord } from '#/lib/discord-modules.ts';
-import { compareSnowflakes } from '#/lib/discord-snowflake.ts';
-import { GuildStore, MessageStore, ReadStateStore } from '#/lib/flux.ts';
 import { pluralize } from '#/lib/text.ts';
-import { IntSchema, SnowflakeSchema, defineTool } from '#/lib/tool.ts';
+import { IntSchema, defineTool } from '#/lib/tool.ts';
 
-interface Cursor {
-	before?: string;
-	after?: string;
-	around?: string;
-}
-
-/**
- * reads a complete page from the live message cache, avoiding an API request.
- *
- * @returns messages oldest first, or null if the cache can't answer the whole page
- */
-const readCached = (channelId: string, { before, after, around }: Cursor, limit: number): any[] | null => {
-	const cm = MessageStore.value.getMessages(channelId);
-	// `cached` means the window came from the local database and may be stale
-	if (!cm.ready || cm.cached || cm.loadingMore || around !== undefined) {
-		return null;
-	}
-
-	const all: any[] = cm.toArray();
-
-	// read state can know about messages absent from MessageStore; reject a cache that has fallen behind
-	const reachesPresent = () => {
-		if (cm.hasMoreAfter) {
-			return false;
-		}
-		const latest: string | undefined = ReadStateStore.value.lastMessageId(channelId);
-		const newest: string | undefined = all.at(-1)?.id;
-		return !latest || (newest !== undefined && compareSnowflakes(newest, latest) >= 0);
-	};
-
-	if (before !== undefined) {
-		const i = cm.indexOf(before);
-		if (i === -1) {
-			return null;
-		}
-		if (i >= limit) {
-			return all.slice(i - limit, i);
-		}
-		return cm.hasMoreBefore ? null : all.slice(0, i);
-	}
-
-	if (after !== undefined) {
-		const i = cm.indexOf(after);
-		if (i === -1) {
-			return null;
-		}
-		if (all.length - 1 - i >= limit) {
-			return all.slice(i + 1, i + 1 + limit);
-		}
-		return reachesPresent() ? all.slice(i + 1) : null;
-	}
-
-	if (!reachesPresent()) {
-		return null;
-	}
-	if (all.length >= limit) {
-		return all.slice(-limit);
-	}
-	return cm.hasMoreBefore ? null : all;
-};
+import { channelName, formatMessage } from './lib/format.ts';
+import { discordGet } from './lib/http.ts';
+import { storeNames } from './lib/lookup.ts';
+import { loadMessageMembers } from './lib/message-members.ts';
+import { createMessageRecord } from './lib/modules.ts';
+import { acquireDiscordLock } from './lib/read-lock.ts';
+import { compareSnowflakes, SnowflakeSchema } from './lib/snowflake.ts';
+import { GuildStore, MessageStore, ReadStateStore } from './lib/stores.ts';
 
 export const getMessages = defineTool({
 	name: 'get_messages',
@@ -153,3 +93,64 @@ export const getMessages = defineTool({
 		return lines.join('\n');
 	},
 });
+
+interface Cursor {
+	before?: string;
+	after?: string;
+	around?: string;
+}
+
+/**
+ * reads a complete page from the live message cache, avoiding an API request.
+ *
+ * @returns messages oldest first, or null if the cache can't answer the whole page
+ */
+const readCached = (channelId: string, { before, after, around }: Cursor, limit: number): any[] | null => {
+	const cm = MessageStore.value.getMessages(channelId);
+	// `cached` means the window came from the local database and may be stale
+	if (!cm.ready || cm.cached || cm.loadingMore || around !== undefined) {
+		return null;
+	}
+
+	const all: any[] = cm.toArray();
+
+	// read state can know about messages absent from MessageStore; reject a cache that has fallen behind
+	const reachesPresent = () => {
+		if (cm.hasMoreAfter) {
+			return false;
+		}
+		const latest: string | undefined = ReadStateStore.value.lastMessageId(channelId);
+		const newest: string | undefined = all.at(-1)?.id;
+		return !latest || (newest !== undefined && compareSnowflakes(newest, latest) >= 0);
+	};
+
+	if (before !== undefined) {
+		const i = cm.indexOf(before);
+		if (i === -1) {
+			return null;
+		}
+		if (i >= limit) {
+			return all.slice(i - limit, i);
+		}
+		return cm.hasMoreBefore ? null : all.slice(0, i);
+	}
+
+	if (after !== undefined) {
+		const i = cm.indexOf(after);
+		if (i === -1) {
+			return null;
+		}
+		if (all.length - 1 - i >= limit) {
+			return all.slice(i + 1, i + 1 + limit);
+		}
+		return reachesPresent() ? all.slice(i + 1) : null;
+	}
+
+	if (!reachesPresent()) {
+		return null;
+	}
+	if (all.length >= limit) {
+		return all.slice(-limit);
+	}
+	return cm.hasMoreBefore ? null : all;
+};

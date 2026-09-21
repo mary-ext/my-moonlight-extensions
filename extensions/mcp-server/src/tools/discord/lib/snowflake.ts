@@ -1,4 +1,20 @@
+import * as v from 'valibot';
+
 const DISCORD_EPOCH = 1420070400000n;
+
+/**
+ * creates a Discord ID schema.
+ *
+ * @param description what the ID refers to
+ * @returns a schema accepting snowflake strings
+ */
+export const SnowflakeSchema = (description: string) => {
+	return v.pipe(
+		v.string(),
+		v.regex(/^\d{1,20}$/, 'Expected a numeric Discord ID'),
+		v.description(description),
+	);
+};
 
 /**
  * reads the creation time encoded in a snowflake.

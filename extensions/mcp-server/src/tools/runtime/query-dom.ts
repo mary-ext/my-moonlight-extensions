@@ -1,9 +1,10 @@
 import * as v from 'valibot';
 
 import { stringify } from '#/lib/describe.ts';
-import { componentChain, elementSummary, fiberName, queryElements } from '#/lib/dom.ts';
 import { pluralize } from '#/lib/text.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';
+
+import { componentChain, elementSummary, fiberName, queryElements } from './lib/dom.ts';
 
 export const queryDom = defineTool({
 	name: 'query_dom',

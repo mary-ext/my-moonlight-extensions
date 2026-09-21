@@ -1,8 +1,9 @@
 import * as v from 'valibot';
 
-import { allStores } from '#/lib/flux.ts';
 import { pluralize } from '#/lib/text.ts';
 import { defineTool } from '#/lib/tool.ts';
+
+import { allStores } from './lib/stores.ts';
 
 export const listStores = defineTool({
 	name: 'list_stores',

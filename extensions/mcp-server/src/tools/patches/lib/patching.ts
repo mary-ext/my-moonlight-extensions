@@ -2,8 +2,9 @@ import type { PatchMatch, PatchReplace } from '@moonlight-mod/types';
 // the package root re-exports types as values, which can't be bundled
 import { PatchReplaceType } from '@moonlight-mod/types/extension';
 
-import { findOccurrences, isMappedFind, matcherToString, matches, normalizeFactory } from './modules.ts';
-import { errorMessage, pluralize } from './text.ts';
+import { findOccurrences, matcherToString, matches } from '#/lib/source-matchers.ts';
+import { errorMessage, pluralize } from '#/lib/text.ts';
+import { isMappedFind, normalizeFactory } from '#/lib/webpack-modules.ts';
 
 const MAX_CHANGE_PREVIEW = 1500;
 

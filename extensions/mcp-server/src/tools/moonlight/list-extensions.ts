@@ -3,9 +3,10 @@ import { ExtensionLoadSource } from '@moonlight-mod/types/extension';
 import * as v from 'valibot';
 
 import { getCapture } from '#/lib/capture.ts';
-import { isEnabledInConfig } from '#/lib/extensions.ts';
 import { pluralize, truncate } from '#/lib/text.ts';
 import { defineTool } from '#/lib/tool.ts';
+
+import { isEnabledInConfig } from './lib/extensions.ts';
 
 const SOURCE_NAMES: Record<ExtensionLoadSource, string> = {
 	[ExtensionLoadSource.Developer]: 'developer',

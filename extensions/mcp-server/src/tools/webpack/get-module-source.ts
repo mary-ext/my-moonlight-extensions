@@ -1,18 +1,15 @@
 import * as v from 'valibot';
 
+import { MatcherSchema, excerpt, findOccurrences, toMatcher } from '#/lib/source-matchers.ts';
+import { pluralize } from '#/lib/text.ts';
+import { IntSchema, defineTool } from '#/lib/tool.ts';
 import {
-	MatcherSchema,
 	ModuleIdSchema,
-	excerpt,
-	findOccurrences,
 	getOriginalSource,
 	getPatchedSource,
 	moduleExists,
 	moduleStatus,
-	toMatcher,
-} from '#/lib/modules.ts';
-import { pluralize } from '#/lib/text.ts';
-import { IntSchema, defineTool } from '#/lib/tool.ts';
+} from '#/lib/webpack-modules.ts';
 
 export const getModuleSource = defineTool({
 	name: 'get_module_source',
@@ -75,6 +72,7 @@ export const getModuleSource = defineTool({
 							.map((x) => x.index)
 							.join(', ')}`
 					: '';
+
 			return `${header}\nOccurrence ${occurrence}/${occurrences.length} at offset ${o.index}.${others}\n\n${excerpt(code, o.index, o.index + o.length, context)}`;
 		}
 

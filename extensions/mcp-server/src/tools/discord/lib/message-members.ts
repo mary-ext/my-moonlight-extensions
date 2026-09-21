@@ -1,7 +1,7 @@
 import Dispatcher from '@moonlight-mod/wp/discord/Dispatcher';
 
 import { sleep } from './async.ts';
-import { GuildMemberRequesterStore, GuildMemberStore } from './flux.ts';
+import { GuildMemberRequesterStore, GuildMemberStore } from './stores.ts';
 
 const MEMBER_WAIT = 2_000;
 

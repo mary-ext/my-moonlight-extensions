@@ -1,7 +1,8 @@
 import * as v from 'valibot';
 
-import { getConfig, getExtension, isEnabledInConfig, writeConfig } from '#/lib/extensions.ts';
 import { defineTool } from '#/lib/tool.ts';
+
+import { getConfig, getExtension, isEnabledInConfig, writeConfig } from './lib/extensions.ts';
 
 const SELF = 'mcpServer';
 

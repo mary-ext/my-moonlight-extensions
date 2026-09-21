@@ -3,16 +3,18 @@ import type { Patch, PatchReplace, PatchReplaceFn, PatchReplaceModule } from '@m
 import { PatchReplaceType } from '@moonlight-mod/types/extension';
 import * as v from 'valibot';
 
+import { expandMatch, matcherToString } from '#/lib/source-matchers.ts';
+import { pluralize } from '#/lib/text.ts';
+import { IntSchema, defineTool } from '#/lib/tool.ts';
 import {
 	ModuleIdSchema,
 	allModuleSources,
-	expandMatch,
 	getOriginalSource,
 	getPatchedBy,
 	getPatchedSource,
-	matcherToString,
 	moduleStatus,
-} from '#/lib/modules.ts';
+} from '#/lib/webpack-modules.ts';
+
 import {
 	compileError,
 	findBreakingReplacement,
@@ -20,9 +22,7 @@ import {
 	formatResult,
 	runReplacements,
 	selectTargets,
-} from '#/lib/patching.ts';
-import { pluralize } from '#/lib/text.ts';
-import { IntSchema, defineTool } from '#/lib/tool.ts';
+} from './lib/patching.ts';
 
 type NormalizedPatch = Patch & { replace: PatchReplace[] };
 
