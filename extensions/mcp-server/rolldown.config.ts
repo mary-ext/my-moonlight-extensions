@@ -10,7 +10,7 @@ export default defineExtensionConfig({
 			name: 'MCP Server',
 			tagline: 'Lets AI agents inspect Discord, test patches and develop extensions',
 			description:
-				'A local [Model Context Protocol](https://modelcontextprotocol.io) server. Connect with `npx @mary-ext/moonlight-mcp`. Socket access allows arbitrary code execution in Discord.',
+				'A local [Model Context Protocol](https://modelcontextprotocol.io) server. Connect with `npx @mary-ext/moonlight-mcp`.\n\nAllows arbitrary code execution in Discord.',
 			authors: ['mary'],
 			tags: ['development'],
 			source: 'https://github.com/mary-ext/my-moonlight-extensions',
