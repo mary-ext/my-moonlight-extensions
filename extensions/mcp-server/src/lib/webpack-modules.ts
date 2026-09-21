@@ -1,8 +1,9 @@
 import { mapDefined } from '@mary/array-fns';
 
+import * as v from 'valibot';
+
 import type { WebpackModuleFunc } from '@moonlight-mod/types';
 import spacepack from '@moonlight-mod/wp/spacepack_spacepack';
-import * as v from 'valibot';
 
 import { getCapture } from './capture.ts';
 

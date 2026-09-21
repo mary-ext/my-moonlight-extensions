@@ -1,5 +1,6 @@
-import type { PatchMatch } from '@moonlight-mod/types';
 import * as v from 'valibot';
+
+import type { PatchMatch } from '@moonlight-mod/types';
 
 /** a string or regex matcher as accepted by tools */
 export const MatcherSchema = v.pipe(

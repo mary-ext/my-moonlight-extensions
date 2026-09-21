@@ -1,6 +1,7 @@
+import * as v from 'valibot';
+
 import { getUser as fetchUser } from '@moonlight-mod/wp/discord/actions/UserActionCreators';
 import { ActivityTypes } from '@moonlight-mod/wp/discord/Constants';
-import * as v from 'valibot';
 
 import { errorMessage, indent } from '#/lib/text.ts';
 import { defineTool } from '#/lib/tool.ts';

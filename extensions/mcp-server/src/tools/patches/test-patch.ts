@@ -1,7 +1,8 @@
+import * as v from 'valibot';
+
 import type { Patch, PatchReplace, PatchReplaceFn, PatchReplaceModule } from '@moonlight-mod/types';
 // the package root re-exports types as values, which can't be bundled
 import { PatchReplaceType } from '@moonlight-mod/types/extension';
-import * as v from 'valibot';
 
 import { expandMatch, matcherToString } from '#/lib/source-matchers.ts';
 import { pluralize } from '#/lib/text.ts';

@@ -13,11 +13,21 @@
 	"sortImports": {
 		"groups": [
 			["builtin", "bun"],
+
 			["react"],
+
 			["oomfware"],
+
 			["external"],
+
+			["moonlight-core"],
+			{ "newlinesBetween": false },
+			["moonlight-webpack"],
+
 			["internal"],
+
 			["parent"],
+
 			["sibling", "index"]
 		],
 		"customGroups": [
@@ -32,6 +42,14 @@
 			{
 				"groupName": "oomfware",
 				"elementNamePattern": ["@mary/**", "@mary-ext/**", "@oomfware/**"]
+			},
+			{
+				"groupName": "moonlight-core",
+				"elementNamePattern": ["@moonlight-mod/**"]
+			},
+			{
+				"groupName": "moonlight-webpack",
+				"elementNamePattern": ["@moonlight-mod/wp/**"]
 			}
 		]
 	},

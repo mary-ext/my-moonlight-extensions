@@ -1,5 +1,6 @@
-import { ChannelTypes } from '@moonlight-mod/wp/discord/Constants';
 import * as v from 'valibot';
+
+import { ChannelTypes } from '@moonlight-mod/wp/discord/Constants';
 
 import { oneLine, pluralize } from '#/lib/text.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';

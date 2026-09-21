@@ -1,6 +1,7 @@
+import * as v from 'valibot';
+
 // the package root re-exports types as values, which can't be bundled
 import { ExtensionLoadSource } from '@moonlight-mod/types/extension';
-import * as v from 'valibot';
 
 import { getCapture } from '#/lib/capture.ts';
 import { pluralize, truncate } from '#/lib/text.ts';

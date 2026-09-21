@@ -1,5 +1,6 @@
-import spacepack from '@moonlight-mod/wp/spacepack_spacepack';
 import * as v from 'valibot';
+
+import spacepack from '@moonlight-mod/wp/spacepack_spacepack';
 
 import { describe, stringify } from '#/lib/describe.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';

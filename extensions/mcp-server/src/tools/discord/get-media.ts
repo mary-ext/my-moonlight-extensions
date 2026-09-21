@@ -1,8 +1,9 @@
 import type { ContentBlock } from '@mary-ext/moonlight-mcp/types';
 
+import * as v from 'valibot';
+
 import { Endpoints } from '@moonlight-mod/wp/discord/Constants';
 import { HTTP } from '@moonlight-mod/wp/discord/utils/HTTPUtils';
-import * as v from 'valibot';
 
 import { errorMessage, pluralize } from '#/lib/text.ts';
 import { defineTool } from '#/lib/tool.ts';

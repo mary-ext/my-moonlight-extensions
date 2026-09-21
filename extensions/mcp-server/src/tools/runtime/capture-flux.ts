@@ -1,5 +1,6 @@
-import Dispatcher from '@moonlight-mod/wp/discord/Dispatcher';
 import * as v from 'valibot';
+
+import Dispatcher from '@moonlight-mod/wp/discord/Dispatcher';
 
 import { describe, stringify } from '#/lib/describe.ts';
 import { pluralize } from '#/lib/text.ts';

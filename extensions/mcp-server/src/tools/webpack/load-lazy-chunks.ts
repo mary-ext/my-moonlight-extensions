@@ -1,7 +1,8 @@
-import { type WebEventPayloads, WebEventType } from '@moonlight-mod/types/core/event';
-import spacepack from '@moonlight-mod/wp/spacepack_spacepack';
 import pLimit from 'p-limit';
 import * as v from 'valibot';
+
+import { type WebEventPayloads, WebEventType } from '@moonlight-mod/types/core/event';
+import spacepack from '@moonlight-mod/wp/spacepack_spacepack';
 
 import { expandRegExp } from '#/lib/source-matchers.ts';
 import { defineTool } from '#/lib/tool.ts';

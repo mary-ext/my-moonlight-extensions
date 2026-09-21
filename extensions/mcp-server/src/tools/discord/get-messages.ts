@@ -1,5 +1,6 @@
-import { Endpoints } from '@moonlight-mod/wp/discord/Constants';
 import * as v from 'valibot';
+
+import { Endpoints } from '@moonlight-mod/wp/discord/Constants';
 
 import { pluralize } from '#/lib/text.ts';
 import { IntSchema, defineTool } from '#/lib/tool.ts';

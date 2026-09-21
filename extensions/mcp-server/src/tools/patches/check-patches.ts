@@ -1,7 +1,8 @@
 import { mapDefined } from '@mary/array-fns';
 
-import type { IdentifiedPatch } from '@moonlight-mod/types';
 import * as v from 'valibot';
+
+import type { IdentifiedPatch } from '@moonlight-mod/types';
 
 import { getCapture } from '#/lib/capture.ts';
 import { matcherToString } from '#/lib/source-matchers.ts';

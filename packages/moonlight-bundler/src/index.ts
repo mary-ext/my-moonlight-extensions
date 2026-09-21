@@ -1,8 +1,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type { ExtensionManifest } from '@moonlight-mod/types';
 import type { Plugin, RolldownOptions } from 'rolldown';
+
+import type { ExtensionManifest } from '@moonlight-mod/types';
 
 // #region types
 
