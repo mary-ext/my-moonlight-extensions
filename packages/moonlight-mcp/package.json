@@ -1,7 +1,7 @@
 {
 	"name": "@mary-ext/moonlight-mcp",
 	"version": "0.1.0",
-	"description": "bridges MCP clients to Discord clients running moonlight's mcpServer extension",
+	"description": "an MCP bridge for Discord",
 	"license": "0BSD",
 	"repository": {
 		"type": "git",
