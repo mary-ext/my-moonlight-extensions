@@ -13,6 +13,28 @@ export const truncate = (s: string, max: number): string => {
 };
 
 /**
+ * collapses whitespace, including line breaks, and shortens the result.
+ *
+ * @param s text to flatten
+ * @param max maximum number of characters to keep
+ * @returns single-line text, with a truncation note if it exceeds `max` characters
+ */
+export const oneLine = (s: string, max: number): string => {
+	return truncate(s.replace(/\s+/g, ' '), max);
+};
+
+/**
+ * prefixes every line.
+ *
+ * @param s text to indent
+ * @param prefix string put before each line
+ * @returns the indented text
+ */
+export const indent = (s: string, prefix: string): string => {
+	return s.replace(/^/gm, prefix);
+};
+
+/**
  * formats a thrown value for display.
  *
  * @param e thrown value

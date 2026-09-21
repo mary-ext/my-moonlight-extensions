@@ -3,10 +3,17 @@ import type { CallToolResult } from '@mary-ext/moonlight-mcp/types';
 import { type WebEventPayloads, WebEventType } from '@moonlight-mod/types/core/event';
 import spacepack from '@moonlight-mod/wp/spacepack_spacepack';
 
-import { isDeveloperMode } from '#/lib/config.ts';
+import { isDeveloperMode, isReadToolsEnabled } from '#/lib/config.ts';
 import { BRIDGE_KEY, type RendererInfo } from '#/lib/ipc.ts';
 import { getNatives } from '#/lib/natives.ts';
 import { ToolRegistry } from '#/lib/tool.ts';
+import { getGuild } from '#/tools/discord/get-guild.ts';
+import { getMessages } from '#/tools/discord/get-messages.ts';
+import { getUser } from '#/tools/discord/get-user.ts';
+import { listChannels } from '#/tools/discord/list-channels.ts';
+import { listGuilds } from '#/tools/discord/list-guilds.ts';
+import { listThreads } from '#/tools/discord/list-threads.ts';
+import { searchMessages } from '#/tools/discord/search-messages.ts';
 import { extensionSettings } from '#/tools/moonlight/extension-settings.ts';
 import { getLogs } from '#/tools/moonlight/get-logs.ts';
 import { listExtensions } from '#/tools/moonlight/list-extensions.ts';
@@ -56,6 +63,10 @@ if (isDeveloperMode()) {
 		extensionSettings,
 		getLogs,
 	);
+}
+
+if (isReadToolsEnabled()) {
+	registry.add(listGuilds, getGuild, listChannels, listThreads, getMessages, searchMessages, getUser);
 }
 
 const BUILD_NUMBER_MARKER = 'Trying to open a changelog for an invalid build number';

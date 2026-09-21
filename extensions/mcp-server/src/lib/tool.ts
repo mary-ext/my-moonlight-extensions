@@ -19,6 +19,20 @@ export const IntSchema = (min: number, max: number) => {
 	return v.pipe(v.number(), v.integer(), v.minValue(min), v.maxValue(max));
 };
 
+/**
+ * creates a Discord ID schema.
+ *
+ * @param description what the ID refers to
+ * @returns a schema accepting snowflake strings
+ */
+export const SnowflakeSchema = (description: string) => {
+	return v.pipe(
+		v.string(),
+		v.regex(/^\d{1,20}$/, 'Expected a numeric Discord ID'),
+		v.description(description),
+	);
+};
+
 /** what a tool handler returns; strings become a single text block */
 export type ToolOutput = string | CallToolResult;
 

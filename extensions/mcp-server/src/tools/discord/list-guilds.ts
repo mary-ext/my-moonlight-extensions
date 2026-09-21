@@ -1,0 +1,33 @@
+import * as v from 'valibot';
+
+import { acquireDiscordLock } from '#/lib/discord-lock.ts';
+import { GuildMemberCountStore, GuildStore, SortedGuildStore } from '#/lib/flux.ts';
+import { pluralize } from '#/lib/text.ts';
+import { defineTool } from '#/lib/tool.ts';
+
+export const listGuilds = defineTool({
+	name: 'list_guilds',
+	description: `List the servers the user is in.`,
+	annotations: { readOnlyHint: true },
+	input: v.object({
+		filter: v.pipe(v.optional(v.string()), v.description('Case-insensitive substring filter on the name')),
+	}),
+	async handler({ filter }) {
+		using _lock = await acquireDiscordLock();
+
+		const needle = filter?.toLowerCase();
+
+		const lines: string[] = [];
+		for (const id of SortedGuildStore.value.getFlattenedGuildIds()) {
+			const guild = GuildStore.value.getGuild(id);
+			if (!guild || (needle && !guild.name.toLowerCase().includes(needle))) {
+				continue;
+			}
+
+			const members: number | undefined = GuildMemberCountStore.value.getMemberCount(id);
+			lines.push(`${guild.name} (${id})${members ? `, ${pluralize(members, 'member')}` : ''}`);
+		}
+
+		return `${pluralize(lines.length, 'server')}:\n${lines.join('\n')}`;
+	},
+});

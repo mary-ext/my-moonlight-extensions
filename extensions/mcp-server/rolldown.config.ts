@@ -25,6 +25,13 @@ export default defineExtensionConfig({
 				default: false,
 				advice: 'reload',
 			},
+			readTools: {
+				displayName: 'Enable Discord read tools',
+				description: `Let agents read and search messages, and look up users, servers and channels using your Discord account.`,
+				type: 'boolean',
+				default: false,
+				advice: 'reload',
+			},
 		},
 	},
 	entrypoints: {
