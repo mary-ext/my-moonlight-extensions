@@ -1,0 +1,7 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["node"]
+	},
+	"include": ["env.d.ts", "rolldown.config.ts", "src/host.ts", "src/natives", "src/node.ts"]
+}

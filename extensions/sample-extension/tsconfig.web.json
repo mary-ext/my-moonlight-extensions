@@ -1,0 +1,9 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"lib": ["esnext", "dom", "dom.iterable"],
+		"jsx": "react"
+	},
+	"include": ["env.d.ts", "src", "webpack-modules.d.ts"],
+	"exclude": ["src/host.ts", "src/natives", "src/node.ts"]
+}

@@ -1,0 +1,71 @@
+{
+	"$schema": "https://unpkg.com/oxlint/configuration_schema.json",
+	"options": {
+		"typeAware": true,
+		"typeCheck": true
+	},
+	"plugins": ["eslint", "oxc", "react", "typescript", "unicorn"],
+	"categories": {
+		"correctness": "warn",
+		"suspicious": "warn",
+		"perf": "warn"
+	},
+	"rules": {
+		"curly": "warn",
+		"no-control-regex": "off",
+		// moonlight and Discord internals use underscored names (`__moonlight`, `_interceptors`)
+		"no-underscore-dangle": "off",
+		"unicorn/switch-case-braces": ["warn", "always"]
+	},
+	"overrides": [
+		{
+			// moonlight's types expose Node.js APIs that don't exist in the renderer
+			"files": [
+				"extensions/*/src/index.ts",
+				"extensions/*/src/index.tsx",
+				"extensions/*/src/webpackModules/**"
+			],
+			"rules": {
+				"no-restricted-globals": [
+					"error",
+					{
+						"name": "Buffer",
+						"message": "Use moonlight.getNatives() for Node.js APIs in the renderer."
+					},
+					{
+						"name": "process",
+						"message": "Use moonlight.getNatives() for Node.js APIs in the renderer."
+					}
+				],
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": ["electron", "node:*"],
+								"message": "Use moonlight.getNatives() for Node.js and Electron APIs in the renderer."
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			// moonlight expands `\i` in patch regexes to match minified identifiers
+			"files": ["extensions/*/src/index.ts", "extensions/*/src/index.tsx"],
+			"rules": {
+				"no-useless-escape": "off"
+			}
+		},
+		{
+			"files": ["*.test.ts"],
+			"rules": {
+				"typescript/no-floating-promises": "off",
+				"no-await-in-loop": "off",
+				"typescript/await-thenable": "off",
+				"unicorn/consistent-function-scoping": "off",
+				"typescript/no-unsafe-type-assertion": "off"
+			}
+		}
+	]
+}

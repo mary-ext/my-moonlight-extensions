@@ -1,0 +1,26 @@
+{
+	"name": "my-moonlight-extensions",
+	"private": true,
+	"description": "mary's moonlight extensions",
+	"license": "0BSD",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/mary-ext/my-moonlight-extensions"
+	},
+	"type": "module",
+	"scripts": {
+		"build": "pnpm --recursive run build",
+		"dev": "pnpm --recursive --parallel --filter './extensions/*' run dev",
+		"fmt": "oxfmt",
+		"lint": "oxlint",
+		"repo": "node scripts/repo.ts"
+	},
+	"devDependencies": {
+		"@electron/asar": "^4.3.0",
+		"@types/node": "^26.6.1",
+		"oxfmt": "^0.68.0",
+		"oxlint": "^1.83.0",
+		"oxlint-tsgolint": "^7.0.2002",
+		"typescript": "^7.0.2"
+	}
+}

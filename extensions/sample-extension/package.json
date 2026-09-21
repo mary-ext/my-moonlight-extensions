@@ -1,0 +1,21 @@
+{
+	"name": "@mary-ext/sample-extension",
+	"private": true,
+	"description": "moonlight extension showing example patches, webpack modules, and native entrypoints",
+	"license": "0BSD",
+	"type": "commonjs",
+	"imports": {
+		"#/*": "./src/*"
+	},
+	"scripts": {
+		"build": "rolldown -c",
+		"dev": "rolldown -c --watch"
+	},
+	"devDependencies": {
+		"@mary-ext/moonlight-bundler": "workspace:*",
+		"@moonlight-mod/types": "^2026.9.1",
+		"@types/node": "^26.6.1",
+		"@types/react": "^19.3.0",
+		"rolldown": "^1.2.9"
+	}
+}

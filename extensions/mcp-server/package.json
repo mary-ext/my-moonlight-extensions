@@ -1,0 +1,27 @@
+{
+	"name": "@mary-ext/mcp-server",
+	"private": true,
+	"description": "moonlight extension that lets AI agents inspect Discord, test patches and develop extensions",
+	"license": "0BSD",
+	"type": "commonjs",
+	"imports": {
+		"#/*": "./src/*"
+	},
+	"scripts": {
+		"build": "rolldown -c",
+		"dev": "rolldown -c --watch"
+	},
+	"dependencies": {
+		"@mary/array-fns": "jsr:^0.1.6",
+		"@valibot/to-json-schema": "^1.8.0",
+		"p-limit": "^7.3.3",
+		"valibot": "^1.5.0"
+	},
+	"devDependencies": {
+		"@mary-ext/moonlight-bundler": "workspace:*",
+		"@mary-ext/moonlight-mcp": "workspace:*",
+		"@moonlight-mod/types": "^2026.9.1",
+		"@types/node": "^26.6.1",
+		"rolldown": "^1.2.9"
+	}
+}

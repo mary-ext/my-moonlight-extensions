@@ -1,0 +1,11 @@
+{
+	"files": [],
+	"references": [
+		{ "path": "./extensions/image-downloader" },
+		{ "path": "./extensions/mcp-server" },
+		{ "path": "./extensions/sample-extension" },
+		{ "path": "./packages/moonlight-bundler" },
+		{ "path": "./packages/moonlight-mcp" },
+		{ "path": "./tsconfig.scripts.json" }
+	]
+}

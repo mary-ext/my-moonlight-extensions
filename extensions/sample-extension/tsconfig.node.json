@@ -1,0 +1,8 @@
+// extension code running in Electron's main and preload processes, and the build config
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["node"]
+	},
+	"include": ["env.d.ts", "rolldown.config.ts", "src/host.ts", "src/natives", "src/node.ts"]
+}

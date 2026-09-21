@@ -1,0 +1,8 @@
+{
+	"mcpServers": {
+		"moonlight": {
+			"command": "node",
+			"args": ["packages/moonlight-mcp/src/cli.ts"]
+		}
+	}
+}

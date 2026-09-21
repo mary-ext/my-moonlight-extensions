@@ -1,0 +1,23 @@
+{
+	"name": "@mary-ext/moonlight-bundler",
+	"private": true,
+	"description": "builds moonlight extensions with rolldown",
+	"license": "0BSD",
+	"type": "module",
+	"imports": {
+		"#/*": "./src/*"
+	},
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"dependencies": {
+		"@moonlight-mod/types": "^2026.9.1",
+		"rolldown": "^1.2.9"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.1"
+	},
+	"engines": {
+		"node": ">=26"
+	}
+}

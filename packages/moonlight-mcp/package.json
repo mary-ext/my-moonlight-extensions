@@ -1,0 +1,49 @@
+{
+	"name": "@mary-ext/moonlight-mcp",
+	"version": "0.1.0",
+	"description": "bridges MCP clients to Discord clients running moonlight's mcpServer extension",
+	"license": "0BSD",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/mary-ext/my-moonlight-extensions",
+		"directory": "packages/moonlight-mcp"
+	},
+	"bin": {
+		"moonlight-mcp": "./dist/cli.js"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"imports": {
+		"#/*.ts": {
+			"source": "./src/*.ts",
+			"default": "./dist/*.js"
+		}
+	},
+	"exports": {
+		"./discovery": {
+			"source": "./src/discovery.ts",
+			"default": "./dist/discovery.js"
+		},
+		"./protocol": {
+			"source": "./src/protocol.ts",
+			"default": "./dist/protocol.js"
+		},
+		"./types": {
+			"source": "./src/types.ts",
+			"default": "./dist/types.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"prepack": "pnpm run build"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.1",
+		"typescript": "^7.0.2"
+	},
+	"engines": {
+		"node": "^24.14.0 || >=25.4.0"
+	}
+}
