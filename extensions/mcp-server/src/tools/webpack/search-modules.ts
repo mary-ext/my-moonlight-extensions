@@ -49,6 +49,7 @@ export const searchModules = defineTool({
 		if (!total) {
 			return 'No modules matched. If the code is lazy, open its UI or run load_lazy_chunks.';
 		}
+		
 		return `${pluralize(total, 'module')} matched${total > limit ? `, showing ${limit}` : ''}:\n\n${hits.join('\n\n')}`;
 	},
 });

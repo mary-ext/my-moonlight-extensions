@@ -21,13 +21,13 @@ const finders = {
 
 export const findExports = defineTool({
 	name: 'find_exports',
-	description: `Find loaded exports by properties, function source or Flux store name; report whether the result is unique.`,
+	description: `Find loaded exports by properties, function source or Flux store name.`,
 	annotations: { readOnlyHint: true },
 	input: v.object({
 		type: v.pipe(
 			v.picklist(['props', 'code', 'store']),
 			v.description(
-				`props: object with all these keys. code: function whose source has all these strings. store: Flux store with this name`,
+				`props: object with all these keys; code: function whose source has all these strings; store: Flux store with this name`,
 			),
 		),
 		args: v.pipe(v.array(v.string()), v.minLength(1)),
@@ -80,6 +80,7 @@ export const findExports = defineTool({
 			export: r.export ?? '(module.exports)',
 			value: describe(r.value, depth),
 		}));
+		
 		return `${verdict}\n${stringify(preview)}`;
 	},
 });

@@ -51,6 +51,7 @@ export const getModuleSource = defineTool({
 			if (patched && moduleExists(id)) {
 				throw new Error(`Module ${id} isn't patched`);
 			}
+	
 			throw new Error(`No module with id ${id}`);
 		}
 

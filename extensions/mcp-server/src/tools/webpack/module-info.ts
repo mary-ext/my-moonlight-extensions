@@ -7,7 +7,7 @@ import { IntSchema, defineTool } from '#/lib/tool.ts';
 
 export const moduleInfo = defineTool({
 	name: 'module_info',
-	description: `A webpack module's load state, moonmap names, applied patches and exports outline.`,
+	description: `Get a webpack module's load state, moonmap names, applied patches and exports outline.`,
 	annotations: { readOnlyHint: true },
 	input: v.object({
 		id: ModuleIdSchema,
