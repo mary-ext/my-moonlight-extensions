@@ -80,7 +80,7 @@ export const findExports = defineTool({
 			export: r.export ?? '(module.exports)',
 			value: describe(r.value, depth),
 		}));
-		
+
 		return `${verdict}\n${stringify(preview)}`;
 	},
 });

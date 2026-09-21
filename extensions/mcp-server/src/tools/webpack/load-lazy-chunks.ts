@@ -11,9 +11,9 @@ export const lazyChunks = defineTool({
 	input: v.object({}),
 	async handler() {
 		const before = Object.keys(spacepack.modules).length;
-		
+
 		await loadLazyChunks();
-		
+
 		const after = Object.keys(spacepack.modules).length;
 
 		return `Module factories: ${before} -> ${after}`;
