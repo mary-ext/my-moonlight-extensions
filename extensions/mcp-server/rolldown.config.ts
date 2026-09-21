@@ -16,6 +16,16 @@ export default defineExtensionConfig({
 			source: 'https://github.com/mary-ext/my-moonlight-extensions',
 		},
 		dependencies: ['spacepack'],
+		settings: {
+			developerTools: {
+				displayName: 'Enable developer tools',
+				description:
+					'Enables patch testing, webpack inspection and extension management tools. This will retain original module sources in memory.',
+				type: 'boolean',
+				default: false,
+				advice: 'reload',
+			},
+		},
 	},
 	entrypoints: {
 		web: 'src/index.ts',

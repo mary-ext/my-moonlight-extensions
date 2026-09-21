@@ -3,6 +3,7 @@ import type { CallToolResult } from '@mary-ext/moonlight-mcp/types';
 import { type WebEventPayloads, WebEventType } from '@moonlight-mod/types/core/event';
 import spacepack from '@moonlight-mod/wp/spacepack_spacepack';
 
+import { isDeveloperMode } from '#/lib/config.ts';
 import { BRIDGE_KEY, type RendererInfo } from '#/lib/ipc.ts';
 import { getNatives } from '#/lib/natives.ts';
 import { ToolRegistry } from '#/lib/tool.ts';
@@ -36,28 +37,26 @@ declare global {
 const logger = moonlight.getLogger('mcpServer/server');
 
 const registry = new ToolRegistry();
-registry.add(
-	testPatch,
-	checkPatches,
-	searchModules,
-	getModuleSource,
-	moduleInfo,
-	listMappings,
-	findExports,
-	suggestFind,
-	lazyChunks,
-	evaluateTool,
-	listStores,
-	inspectStore,
-	captureFlux,
-	queryDom,
-	inspectReact,
-	listExtensions,
-	setExtensionEnabled,
-	extensionSettings,
-	getLogs,
-	reload,
-);
+registry.add(evaluateTool, listStores, inspectStore, captureFlux, queryDom, reload);
+
+if (isDeveloperMode()) {
+	registry.add(
+		testPatch,
+		checkPatches,
+		searchModules,
+		getModuleSource,
+		moduleInfo,
+		listMappings,
+		findExports,
+		suggestFind,
+		lazyChunks,
+		inspectReact,
+		listExtensions,
+		setExtensionEnabled,
+		extensionSettings,
+		getLogs,
+	);
+}
 
 const BUILD_NUMBER_MARKER = 'Trying to open a changelog for an invalid build number';
 const BUILD_NUMBER = /"Trying to open a changelog for an invalid build number (\d+?)"\)/;

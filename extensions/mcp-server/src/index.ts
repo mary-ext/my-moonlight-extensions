@@ -2,9 +2,10 @@ import type { ExtensionWebExports } from '@moonlight-mod/types';
 import { WebEventType } from '@moonlight-mod/types/core/event';
 
 import { createCapture } from './lib/capture.ts';
+import { isDeveloperMode } from './lib/config.ts';
 
-// extension entrypoints run before moonlight installs the webpack patcher
-{
+// capture before moonlight installs the webpack patcher; only developer tools need original factories
+if (isDeveloperMode()) {
 	const capture = createCapture();
 
 	// `unpatched` includes earlier extensions' patches and receives later registrations
