@@ -97,7 +97,7 @@ const listPrivateChannels = (limit: number) => {
 		if (channel.lastMessageId) {
 			line += `, last message ${formatDate(snowflakeToDate(channel.lastMessageId))}`;
 		}
-		
+
 		lines.push(line);
 	}
 

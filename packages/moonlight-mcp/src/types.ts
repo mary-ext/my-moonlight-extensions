@@ -16,10 +16,21 @@ export interface ToolInfo {
 }
 
 /** a text block in a tool result */
-export interface ContentBlock {
+export interface TextContent {
 	type: 'text';
 	text: string;
 }
+
+/** an image block in a tool result */
+export interface ImageContent {
+	type: 'image';
+	/** base64-encoded image data */
+	data: string;
+	mimeType: string;
+}
+
+/** a block in a tool result */
+export type ContentBlock = ImageContent | TextContent;
 
 /** result of a `tools/call` request */
 export interface CallToolResult {

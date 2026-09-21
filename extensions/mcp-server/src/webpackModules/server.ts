@@ -8,6 +8,7 @@ import { BRIDGE_KEY, type RendererInfo } from '#/lib/ipc.ts';
 import { getNatives } from '#/lib/natives.ts';
 import { ToolRegistry } from '#/lib/tool.ts';
 import { getGuild } from '#/tools/discord/get-guild.ts';
+import { getMedia } from '#/tools/discord/get-media.ts';
 import { getMessages } from '#/tools/discord/get-messages.ts';
 import { getUser } from '#/tools/discord/get-user.ts';
 import { listChannels } from '#/tools/discord/list-channels.ts';
@@ -66,7 +67,16 @@ if (isDeveloperMode()) {
 }
 
 if (isReadToolsEnabled()) {
-	registry.add(listGuilds, getGuild, listChannels, listThreads, getMessages, searchMessages, getUser);
+	registry.add(
+		listGuilds,
+		getGuild,
+		listChannels,
+		listThreads,
+		getMessages,
+		getMedia,
+		searchMessages,
+		getUser,
+	);
 }
 
 const BUILD_NUMBER_MARKER = 'Trying to open a changelog for an invalid build number';

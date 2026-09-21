@@ -109,6 +109,29 @@ const formatSize = (bytes: number) => {
 	return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 };
 
+/**
+ * identifies image and video attachments with dimensions.
+ *
+ * @param attachment attachment as the API returns it
+ * @returns whether the attachment has a width and an image or video MIME type
+ */
+export const isVisualAttachment = (attachment: any): boolean => {
+	const type: string = attachment.content_type ?? '';
+	return !!attachment.width && (type.startsWith('image/') || type.startsWith('video/'));
+};
+
+/**
+ * formats an attachment's name, type, dimensions and size.
+ *
+ * @param attachment attachment as the API returns it
+ * @returns e.g. `image.png image/png, 1028×758, 677.2 KB`
+ */
+export const formatAttachment = (attachment: any): string => {
+	const type = attachment.content_type ? ` ${attachment.content_type}` : '';
+	const dimensions = attachment.width ? `, ${attachment.width}×${attachment.height}` : '';
+	return `${attachment.filename}${type}${dimensions}, ${formatSize(attachment.size)}`;
+};
+
 const resolveMarkup = (content: string, { guildId, names }: NameContext) => {
 	const resolved = content.replace(/<a?(:\w+:)\d+>/g, '$1');
 	return resolved.replace(/<(@!?|@&|#)(\d+)>/g, (match, kind: string, id: string) => {
@@ -144,8 +167,9 @@ const formatBody = (message: any, context: NameContext): string[] => {
 	};
 
 	for (const a of message.attachments ?? []) {
-		const type = a.content_type ? ` ${a.content_type}` : '';
-		lines.push(`  [attachment] ${a.filename}${type}, ${formatSize(a.size)}: ${a.url}`);
+		// omit signed image/video URLs; use get_media to view them
+		const url = isVisualAttachment(a) ? '' : `: ${a.url}`;
+		lines.push(`  [attachment] ${formatAttachment(a)}${url}`);
 	}
 
 	for (const e of message.embeds ?? []) {
@@ -165,7 +189,17 @@ const formatBody = (message: any, context: NameContext): string[] => {
 		if (e.url) {
 			parts.push(e.url);
 		}
-		if (parts.length) {
+		let media: string | undefined;
+		if (e.video) {
+			media = 'video';
+		} else if (e.image || e.thumbnail) {
+			media = 'image';
+		}
+
+		// include textless embeds so callers can discover media for get_media
+		if (media !== undefined) {
+			lines.push(parts.length ? `  [embed with ${media}] ${parts.join(' | ')}` : `  [embed with ${media}]`);
+		} else if (parts.length) {
 			lines.push(`  [embed] ${parts.join(' | ')}`);
 		}
 	}

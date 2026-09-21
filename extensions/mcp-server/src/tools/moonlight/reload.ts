@@ -10,9 +10,7 @@ export const reload = defineTool({
 	input: v.object({
 		mode: v.pipe(
 			v.optional(v.picklist(['reload', 'restart']), 'reload'),
-			v.description(
-				'reload: Reloads the web page; restart: Relaunches the app',
-			),
+			v.description('reload: Reloads the web page; restart: Relaunches the app'),
 		),
 	}),
 	async handler({ mode }) {
