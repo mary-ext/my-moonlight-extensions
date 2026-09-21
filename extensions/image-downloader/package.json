@@ -1,8 +1,6 @@
 {
 	"name": "@mary-ext/image-downloader",
 	"private": true,
-	"description": "moonlight extension that saves image attachments with one click",
-	"license": "0BSD",
 	"type": "commonjs",
 	"imports": {
 		"#/*": "./src/*"

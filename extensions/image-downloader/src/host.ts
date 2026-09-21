@@ -16,7 +16,9 @@ const readDirectorySetting = async () => {
 	try {
 		const config = JSON.parse(await fs.readFile(await moonlightHost.getConfigPath(), 'utf8'));
 		const entry = config?.extensions?.[EXT_ID];
+
 		const directory = typeof entry === 'object' ? entry?.config?.directory : undefined;
+
 		return typeof directory === 'string' ? directory.trim() : '';
 	} catch (err) {
 		logger.warn('failed to read the config, using the default directory', err);
@@ -28,6 +30,7 @@ const expandHome = (p: string) => {
 	if (p === '~' || p.startsWith('~/')) {
 		return path.join(app.getPath('home'), p.slice(1));
 	}
+
 	return p;
 };
 
@@ -36,6 +39,7 @@ const getDirectory = async () => {
 	if (directory) {
 		return path.resolve(expandHome(directory));
 	}
+
 	// Electron resolves the xdg-user-dirs download directory on Linux, the env var just takes priority
 	return path.join(process.env.XDG_DOWNLOAD_DIR || app.getPath('downloads'), 'moonlight');
 };
@@ -47,6 +51,7 @@ const sanitizeFileName = (name: string) => {
 		.replace(/^\.+/, '')
 		.trim()
 		.slice(0, 200);
+
 	return clean || 'image';
 };
 
@@ -56,9 +61,11 @@ const writeUnique = async (dir: string, name: string, data: Uint8Array) => {
 
 	for (let n = 0; n < MAX_NAME_ATTEMPTS; n++) {
 		const file = path.join(dir, n === 0 ? name : `${stem} (${n})${ext}`);
+
 		try {
 			// oxlint-disable-next-line no-await-in-loop -- each attempt depends on the previous one failing
 			await fs.writeFile(file, data, { flag: 'wx' });
+
 			return file;
 		} catch (e) {
 			if (!(e instanceof Error && 'code' in e && e.code === 'EEXIST')) {
@@ -72,11 +79,12 @@ const writeUnique = async (dir: string, name: string, data: Uint8Array) => {
 
 const download = async (url: unknown) => {
 	if (typeof url !== 'string') {
-		throw new Error(`Expected a URL`);
+		throw new Error(`Expected a valid CDN URL`);
 	}
-	const parsed = new URL(url);
-	if (parsed.protocol !== 'https:' || !CDN_HOSTS.has(parsed.hostname)) {
-		throw new Error(`Refusing to download from ${parsed.host}`);
+
+	const parsed = URL.parse(url);
+	if (parsed === null || parsed.protocol !== 'https:' || !CDN_HOSTS.has(parsed.hostname)) {
+		throw new Error(`Expected a valid CDN URL`);
 	}
 
 	const [res, dir] = await Promise.all([fetch(parsed.href), getDirectory()]);

@@ -9,7 +9,6 @@ export default defineExtensionConfig({
 		meta: {
 			name: 'Image Downloader',
 			tagline: 'Save image attachments with one click',
-			description: 'Adds a button to save image attachments.',
 			authors: ['mary'],
 			tags: ['qol'],
 			source: 'https://github.com/mary-ext/my-moonlight-extensions',

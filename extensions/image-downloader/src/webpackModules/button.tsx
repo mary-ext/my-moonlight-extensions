@@ -15,18 +15,6 @@ import type * as natives from '#/node.ts';
 
 const logger = moonlight.getLogger('imageDownloader/button');
 
-/** the props Discord passes its attachment hover toolbar */
-interface ToolbarProps {
-	downloadURL?: string;
-	type?: string;
-}
-
-/** Discord's tooltip wrapper used by the toolbar's own buttons */
-type Tooltip = React.ComponentType<{ text: string; children: React.ReactNode }>;
-
-const LABEL = 'Save image';
-
-// same margin Discord uses before refreshing a link itself
 const REFRESH_MARGIN = 60 * 60 * 1000;
 
 // refresh expiring attachment signatures for channels left open longer than the link's lifetime
@@ -37,6 +25,7 @@ const getFreshUrl = async (url: string) => {
 	} catch {
 		return url;
 	}
+
 	if (!CDN_HOSTS.has(parsed.hostname)) {
 		return url;
 	}
@@ -51,6 +40,7 @@ const getFreshUrl = async (url: string) => {
 			url: Endpoints.ATTACHMENTS_REFRESH_URLS,
 			body: { attachment_urls: [url] },
 		});
+
 		return res.body?.refreshed_urls?.[0]?.refreshed ?? url;
 	} catch (err) {
 		logger.warn('failed to refresh attachment link, trying the old one', err);
@@ -63,40 +53,43 @@ const save = async (url: string) => {
 	if (native === undefined) {
 		throw new Error(`imageDownloader's natives are unavailable`);
 	}
+
 	return native.download(await getFreshUrl(url));
 };
 
 const DownloadButton = ({ url, Tooltip }: { url: string; Tooltip: Tooltip }) => {
 	const [busy, setBusy] = React.useState(false);
 
-	const onClick = () => {
+	const onClick = async () => {
 		if (busy) {
 			return;
 		}
 
 		setBusy(true);
-		save(url)
-			.then(
-				(file) => {
-					showToast(createToast(`Saved to ${file}`, ToastType.SUCCESS));
-				},
-				(err: unknown) => {
-					logger.error('failed to save', url, err);
-					const reason = err instanceof Error ? err.message : String(err);
-					showToast(createToast(`Couldn't save the image: ${reason}`, ToastType.FAILURE));
-				},
-			)
-			.finally(() => setBusy(false));
+
+		try {
+			const file = await save(url);
+
+			showToast(createToast(`Saved to ${file}`, ToastType.SUCCESS));
+		} catch (err) {
+			logger.error('failed to save', url, err);
+
+			const reason = err instanceof Error ? err.message : String(err);
+
+			showToast(createToast(`Couldn't save the image: ${reason}`, ToastType.FAILURE));
+		} finally {
+			setBusy(false);
+		}
 	};
 
 	return (
 		<ErrorBoundary noop>
-			<Tooltip text={LABEL}>
+			<Tooltip text="Save image">
 				<Clickable
 					className={HoverButtonClasses.hoverButton}
 					focusProps={{ offset: 2 }}
 					onClick={onClick}
-					aria-label={LABEL}
+					aria-label="Save image"
 				>
 					<DownloadIcon size="custom" color="currentColor" width={20} height={20} />
 				</Clickable>
@@ -104,6 +97,15 @@ const DownloadButton = ({ url, Tooltip }: { url: string; Tooltip: Tooltip }) => 
 		</ErrorBoundary>
 	);
 };
+
+/** the props Discord passes its attachment hover toolbar */
+interface ToolbarProps {
+	downloadURL?: string;
+	type?: string;
+}
+
+/** Discord's tooltip wrapper used by the toolbar's own buttons */
+type Tooltip = React.ComponentType<{ text: string; children: React.ReactNode }>;
 
 /**
  * renders a save button for image attachments.
