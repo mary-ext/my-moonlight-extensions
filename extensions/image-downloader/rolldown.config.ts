@@ -3,7 +3,7 @@ import { defineExtensionConfig } from '@mary-ext/moonlight-bundler';
 export default defineExtensionConfig({
 	manifest: {
 		id: 'imageDownloader',
-		version: '0.1.0',
+		version: '0.2.0',
 		apiLevel: 2,
 		environment: 'desktop',
 		meta: {
