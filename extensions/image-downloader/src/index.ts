@@ -23,6 +23,7 @@ export const webpackModules: ExtensionWebExports['webpackModules'] = {
 			{ id: 'discord/design/components/Toast/web/ToastConstants' },
 			{ id: 'discord/modules/chat/web/ImageHoverButtons.css' },
 			{ id: 'discord/modules/icons/web/DownloadIcon' },
+			{ id: 'discord/uikit/Spinner' },
 			{ id: 'discord/utils/HTTPUtils' },
 		],
 	},
