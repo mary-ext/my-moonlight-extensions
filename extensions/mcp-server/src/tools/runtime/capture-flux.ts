@@ -56,7 +56,8 @@ export const registerCaptureFlux = (registry: ToolRegistry): void => {
 
 			const total = counts.values().reduce((a, b) => a + b, 0);
 			const summary = [...counts]
-				.toSorted((a, b) => b[1] - a[1])
+				// oxlint-disable-next-line unicorn/no-array-sort -- sorts the array built above
+				.sort((a, b) => b[1] - a[1])
 				.map(([type, n]) => `  ${type}: ${n}`)
 				.join('\n');
 			return `Captured ${pluralize(total, 'action')} in ${durationMs}ms:\n${summary || '  (none)'}\n\nPayloads:\n${stringify(recorded)}`;

@@ -20,9 +20,12 @@ export const registerListStores = (registry: ToolRegistry): void => {
 		}),
 		handler({ filter }) {
 			const needle = filter?.toLowerCase();
-			const names = [...allStores().keys()]
+			const names = allStores()
+				.keys()
 				.filter((n) => !needle || n.toLowerCase().includes(needle))
-				.toSorted((a, b) => a.localeCompare(b));
+				.toArray()
+				// oxlint-disable-next-line unicorn/no-array-sort -- sorts the array built above
+				.sort((a, b) => a.localeCompare(b));
 			return `${pluralize(names.length, 'store')}:\n${names.join('\n')}`;
 		},
 	});

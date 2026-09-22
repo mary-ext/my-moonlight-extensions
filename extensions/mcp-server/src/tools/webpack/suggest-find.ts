@@ -51,22 +51,18 @@ export const registerSuggestFind = (registry: ToolRegistry): void => {
 				}
 			}
 
-			const others: string[] = [];
-			for (const [otherId, src] of allModuleSources()) {
-				if (otherId !== id) {
-					others.push(src);
-				}
-			}
+			const others = allModuleSources()
+				.filter(([otherId]) => otherId !== id)
+				.map(([, src]) => src)
+				.toArray();
 
-			const unique: Array<[string, number]> = [];
-			for (const [find, distance] of [...candidates].toSorted((a, b) => a[1] - b[1])) {
-				if (unique.length >= limit) {
-					break;
-				}
-				if (!others.some((src) => src.includes(find))) {
-					unique.push([find, distance]);
-				}
-			}
+			const unique = [...candidates]
+				// oxlint-disable-next-line unicorn/no-array-sort -- sorts the array built above
+				.sort((a, b) => a[1] - b[1])
+				.values()
+				.filter(([find]) => !others.some((src) => src.includes(find)))
+				.take(limit)
+				.toArray();
 
 			if (!unique.length) {
 				return 'No unique literals. Try a code fragment near the target (property names survive minification) and check it with search_modules.';
