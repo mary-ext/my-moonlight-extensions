@@ -3,7 +3,7 @@ import * as v from 'valibot';
 import { Endpoints } from '@moonlight-mod/wp/discord/Constants';
 
 import { pluralize } from '#/lib/text.ts';
-import { IntSchema, defineTool } from '#/lib/tool.ts';
+import { IntSchema, type ToolRegistry } from '#/lib/tool.ts';
 
 import { channelName, formatMessage } from './lib/format.ts';
 import { discordGet } from './lib/http.ts';
@@ -14,86 +14,93 @@ import { acquireDiscordLock } from './lib/read-lock.ts';
 import { compareSnowflakes, SnowflakeSchema } from './lib/snowflake.ts';
 import { GuildStore, MessageStore, ReadStateStore } from './lib/stores.ts';
 
-export const getMessages = defineTool({
-	name: 'get_messages',
-	description: `Read channel, thread or DM messages.`,
-	annotations: { readOnlyHint: true, openWorldHint: true },
-	input: v.object({
-		channelId: SnowflakeSchema('Channel, thread or DM channel ID'),
-		before: v.optional(SnowflakeSchema('Return messages before this message ID')),
-		after: v.optional(SnowflakeSchema('Return messages after this message ID')),
-		around: v.optional(SnowflakeSchema('Return messages around this message ID, including it')),
-		limit: v.optional(IntSchema(1, 100), 50),
-	}),
-	async handler({ channelId, before, after, around, limit }) {
-		const cursorCount = [before, after, around].filter((c) => c !== undefined).length;
-		if (cursorCount > 1) {
-			throw new Error(`Pass at most one of before, after and around`);
-		}
-
-		using _lock = await acquireDiscordLock();
-
-		const cursor: Cursor = { before, after, around };
-		let names = storeNames();
-		const channel = names.channel(channelId);
-		const parent = channel?.parent_id ? names.channel(channel.parent_id) : undefined;
-		const guildId: string | null = channel?.guild_id ?? null;
-
-		if (channel?.isForumLikeChannel()) {
-			throw new Error(
-				`${channelName(channel, names)} contains posts; use list_threads, then get_messages on a post`,
-			);
-		}
-
-		// forum and media posts open at the starter message, which shares the post's ID
-		if (channel?.isForumPost() && cursorCount === 0) {
-			cursor.around = channelId;
-		}
-
-		let messages = readCached(channelId, cursor, limit);
-		if (!messages) {
-			const body: any[] = await discordGet(Endpoints.MESSAGES(channelId), {
-				limit: String(limit),
-				before: cursor.before,
-				after: cursor.after,
-				around: cursor.around,
-			});
-			messages = body.map(createMessageRecord.value).toReversed();
-			names = storeNames(body);
-		}
-
-		if (guildId !== null) {
-			await loadMessageMembers(guildId, messages);
-		}
-
-		let where = channel ? channelName(channel, names) : `channel ${channelId}`;
-		if (parent && channel.isThread()) {
-			where += ` (${channel.isForumPost() ? 'post' : 'thread'} in ${channelName(parent, names)})`;
-		}
-		if (guildId !== null) {
-			const guild = GuildStore.value.getGuild(guildId);
-			where += ` in ${guild?.name ?? guildId}`;
-		}
-
-		const lines = [`${where}: ${pluralize(messages.length, 'message')}`];
-		for (const message of messages) {
-			lines.push('', formatMessage(message, { guildId, names }));
-		}
-
-		if (messages.length) {
-			const pages = [`older: before=${messages[0].id}`];
-
-			// only cursor-based pages can have newer messages
-			if (cursor.before !== undefined || cursor.after !== undefined || cursor.around !== undefined) {
-				pages.push(`newer: after=${messages.at(-1).id}`);
+/**
+ * registers the `get_messages` tool.
+ *
+ * @param registry registry to add the tool to
+ */
+export const registerGetMessages = (registry: ToolRegistry): void => {
+	registry.define({
+		name: 'get_messages',
+		description: `Read channel, thread or DM messages.`,
+		annotations: { readOnlyHint: true, openWorldHint: true },
+		input: v.object({
+			channelId: SnowflakeSchema('Channel, thread or DM channel ID'),
+			before: v.optional(SnowflakeSchema('Return messages before this message ID')),
+			after: v.optional(SnowflakeSchema('Return messages after this message ID')),
+			around: v.optional(SnowflakeSchema('Return messages around this message ID, including it')),
+			limit: v.optional(IntSchema(1, 100), 50),
+		}),
+		async handler({ channelId, before, after, around, limit }) {
+			const cursorCount = [before, after, around].filter((c) => c !== undefined).length;
+			if (cursorCount > 1) {
+				throw new Error(`Pass at most one of before, after and around`);
 			}
 
-			lines.push('', pages.join(' · '));
-		}
+			using _lock = await acquireDiscordLock();
 
-		return lines.join('\n');
-	},
-});
+			const cursor: Cursor = { before, after, around };
+			let names = storeNames();
+			const channel = names.channel(channelId);
+			const parent = channel?.parent_id ? names.channel(channel.parent_id) : undefined;
+			const guildId: string | null = channel?.guild_id ?? null;
+
+			if (channel?.isForumLikeChannel()) {
+				throw new Error(
+					`${channelName(channel, names)} contains posts; use list_threads, then get_messages on a post`,
+				);
+			}
+
+			// forum and media posts open at the starter message, which shares the post's ID
+			if (channel?.isForumPost() && cursorCount === 0) {
+				cursor.around = channelId;
+			}
+
+			let messages = readCached(channelId, cursor, limit);
+			if (!messages) {
+				const body: any[] = await discordGet(Endpoints.MESSAGES(channelId), {
+					limit: String(limit),
+					before: cursor.before,
+					after: cursor.after,
+					around: cursor.around,
+				});
+				messages = body.map(createMessageRecord.value).toReversed();
+				names = storeNames(body);
+			}
+
+			if (guildId !== null) {
+				await loadMessageMembers(guildId, messages);
+			}
+
+			let where = channel ? channelName(channel, names) : `channel ${channelId}`;
+			if (parent && channel.isThread()) {
+				where += ` (${channel.isForumPost() ? 'post' : 'thread'} in ${channelName(parent, names)})`;
+			}
+			if (guildId !== null) {
+				const guild = GuildStore.value.getGuild(guildId);
+				where += ` in ${guild?.name ?? guildId}`;
+			}
+
+			const lines = [`${where}: ${pluralize(messages.length, 'message')}`];
+			for (const message of messages) {
+				lines.push('', formatMessage(message, { guildId, names }));
+			}
+
+			if (messages.length) {
+				const pages = [`older: before=${messages[0].id}`];
+
+				// only cursor-based pages can have newer messages
+				if (cursor.before !== undefined || cursor.after !== undefined || cursor.around !== undefined) {
+					pages.push(`newer: after=${messages.at(-1).id}`);
+				}
+
+				lines.push('', pages.join(' · '));
+			}
+
+			return lines.join('\n');
+		},
+	});
+};
 
 interface Cursor {
 	before?: string;

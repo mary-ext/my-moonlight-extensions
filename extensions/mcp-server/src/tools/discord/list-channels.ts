@@ -3,7 +3,7 @@ import * as v from 'valibot';
 import { ChannelTypes } from '@moonlight-mod/wp/discord/Constants';
 
 import { oneLine, pluralize } from '#/lib/text.ts';
-import { IntSchema, defineTool } from '#/lib/tool.ts';
+import { IntSchema, type ToolRegistry } from '#/lib/tool.ts';
 
 import { type Names, channelName, formatDate } from './lib/format.ts';
 import { requireGuild, storeNames } from './lib/lookup.ts';
@@ -11,24 +11,31 @@ import { acquireDiscordLock } from './lib/read-lock.ts';
 import { snowflakeToDate, SnowflakeSchema } from './lib/snowflake.ts';
 import { ActiveJoinedThreadsStore, GuildChannelStore, PrivateChannelSortStore } from './lib/stores.ts';
 
-export const listChannels = defineTool({
-	name: 'list_channels',
-	description: `List a server's channels and active joined threads, or the user's direct messages.`,
-	annotations: { readOnlyHint: true },
-	input: v.object({
-		guildId: v.optional(SnowflakeSchema('Server ID; omit to list DMs')),
-		limit: v.pipe(v.optional(IntSchema(1, 500), 50), v.description('Maximum number of DMs to list')),
-	}),
-	async handler({ guildId, limit }) {
-		using _lock = await acquireDiscordLock();
+/**
+ * registers the `list_channels` tool.
+ *
+ * @param registry registry to add the tool to
+ */
+export const registerListChannels = (registry: ToolRegistry): void => {
+	registry.define({
+		name: 'list_channels',
+		description: `List a server's channels and active joined threads, or the user's direct messages.`,
+		annotations: { readOnlyHint: true },
+		input: v.object({
+			guildId: v.optional(SnowflakeSchema('Server ID; omit to list DMs')),
+			limit: v.pipe(v.optional(IntSchema(1, 500), 50), v.description('Maximum number of DMs to list')),
+		}),
+		async handler({ guildId, limit }) {
+			using _lock = await acquireDiscordLock();
 
-		if (guildId !== undefined) {
-			return listGuildChannels(guildId);
-		}
+			if (guildId !== undefined) {
+				return listGuildChannels(guildId);
+			}
 
-		return listPrivateChannels(limit);
-	},
-});
+			return listPrivateChannels(limit);
+		},
+	});
+};
 
 const MAX_TOPIC = 120;
 // GuildChannelStore files uncategorized channels under a pseudo-category with this ID

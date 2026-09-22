@@ -6,7 +6,7 @@ import { Endpoints } from '@moonlight-mod/wp/discord/Constants';
 import { HTTP } from '@moonlight-mod/wp/discord/utils/HTTPUtils';
 
 import { errorMessage, pluralize } from '#/lib/text.ts';
-import { defineTool } from '#/lib/tool.ts';
+import type { ToolRegistry } from '#/lib/tool.ts';
 
 import { channelName, formatAttachment, isVisualAttachment } from './lib/format.ts';
 import { discordGet, toApiError } from './lib/http.ts';
@@ -16,51 +16,58 @@ import { acquireDiscordLock } from './lib/read-lock.ts';
 import { SnowflakeSchema } from './lib/snowflake.ts';
 import { MessageStore } from './lib/stores.ts';
 
-export const getMedia = defineTool({
-	name: 'get_media',
-	description: `View images, video thumbnails and stickers from a message.`,
-	annotations: { readOnlyHint: true, openWorldHint: true },
-	input: v.object({
-		channelId: SnowflakeSchema('Channel, thread or DM channel ID'),
-		messageId: SnowflakeSchema('Message ID'),
-	}),
-	async handler({ channelId, messageId }) {
-		let items: MediaItem[];
-		{
-			// media proxy downloads don't need the Discord API lock
-			using _lock = await acquireDiscordLock();
+/**
+ * registers the `get_media` tool.
+ *
+ * @param registry registry to add the tool to
+ */
+export const registerGetMedia = (registry: ToolRegistry): void => {
+	registry.define({
+		name: 'get_media',
+		description: `View images, video thumbnails and stickers from a message.`,
+		annotations: { readOnlyHint: true, openWorldHint: true },
+		input: v.object({
+			channelId: SnowflakeSchema('Channel, thread or DM channel ID'),
+			messageId: SnowflakeSchema('Message ID'),
+		}),
+		async handler({ channelId, messageId }) {
+			let items: MediaItem[];
+			{
+				// media proxy downloads don't need the Discord API lock
+				using _lock = await acquireDiscordLock();
 
-			const collected = collectMedia(await loadMessage(channelId, messageId));
-			if (!collected.length) {
-				throw new Error(`Message ${messageId} has no media`);
+				const collected = collectMedia(await loadMessage(channelId, messageId));
+				if (!collected.length) {
+					throw new Error(`Message ${messageId} has no media`);
+				}
+
+				items = await refreshUrls(collected);
 			}
 
-			items = await refreshUrls(collected);
-		}
+			const blocks = await Promise.all(
+				items.map(async ({ label, source }, i): Promise<ContentBlock[]> => {
+					const numbered = `[${i + 1}] ${label}`;
+					if (!source) {
+						return [{ type: 'text', text: numbered }];
+					}
 
-		const blocks = await Promise.all(
-			items.map(async ({ label, source }, i): Promise<ContentBlock[]> => {
-				const numbered = `[${i + 1}] ${label}`;
-				if (!source) {
-					return [{ type: 'text', text: numbered }];
-				}
+					try {
+						return [{ type: 'text', text: numbered }, await fetchImage(source)];
+					} catch (e) {
+						return [{ type: 'text', text: `${numbered} (failed: ${errorMessage(e)})` }];
+					}
+				}),
+			);
 
-				try {
-					return [{ type: 'text', text: numbered }, await fetchImage(source)];
-				} catch (e) {
-					return [{ type: 'text', text: `${numbered} (failed: ${errorMessage(e)})` }];
-				}
-			}),
-		);
+			const names = storeNames();
+			const channel = names.channel(channelId);
+			const where = channel ? channelName(channel, names) : `channel ${channelId}`;
 
-		const names = storeNames();
-		const channel = names.channel(channelId);
-		const where = channel ? channelName(channel, names) : `channel ${channelId}`;
-
-		const header = `message ${messageId} in ${where}: ${pluralize(items.length, 'media item')}`;
-		return { content: [{ type: 'text', text: header }, ...blocks.flat()] };
-	},
-});
+			const header = `message ${messageId} in ${where}: ${pluralize(items.length, 'media item')}`;
+			return { content: [{ type: 'text', text: header }, ...blocks.flat()] };
+		},
+	});
+};
 
 const logger = moonlight.getLogger('mcpServer/getMedia');
 

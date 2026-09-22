@@ -31,34 +31,22 @@ export interface Tool<S extends ObjectSchema = ObjectSchema> {
 	handler(args: v.InferOutput<S>): ToolOutput | Promise<ToolOutput>;
 }
 
-/**
- * defines a tool, inferring the handler's argument type from its input schema.
- *
- * @param tool metadata, input schema and handler
- * @returns the same tool, typed for {@link ToolRegistry}
- */
-export const defineTool = <S extends ObjectSchema>(tool: Tool<S>): Tool => {
-	return tool;
-};
-
 /** holds tools and dispatches calls to them */
 export class ToolRegistry {
 	readonly #tools = new Map<string, Tool>();
 	#infoCache: ToolInfo[] | null = null;
 
 	/**
-	 * adds tools.
+	 * adds a tool, inferring the handler's argument type from its input schema.
 	 *
-	 * @param tools tools to add
+	 * @param tool metadata, input schema and handler
 	 * @throws if a tool with the same name was already added
 	 */
-	add(...tools: Tool[]): void {
-		for (const tool of tools) {
-			if (this.#tools.has(tool.name)) {
-				throw new Error(`Duplicate tool ${tool.name}`);
-			}
-			this.#tools.set(tool.name, tool);
+	define<S extends ObjectSchema>(tool: Tool<S>): void {
+		if (this.#tools.has(tool.name)) {
+			throw new Error(`Duplicate tool ${tool.name}`);
 		}
+		this.#tools.set(tool.name, tool);
 		this.#infoCache = null;
 	}
 

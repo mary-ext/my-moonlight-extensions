@@ -7,7 +7,7 @@ import type { IdentifiedPatch } from '@moonlight-mod/types';
 import { getCapture } from '#/lib/capture.ts';
 import { matcherToString } from '#/lib/source-matchers.ts';
 import { pluralize } from '#/lib/text.ts';
-import { defineTool } from '#/lib/tool.ts';
+import type { ToolRegistry } from '#/lib/tool.ts';
 import { allModuleSources, getOriginalSource, getPatchedBy, isModuleLoaded } from '#/lib/webpack-modules.ts';
 
 import {
@@ -130,69 +130,76 @@ const runtimeState = (patch: IdentifiedPatch, report: PatchReport) => {
 	return report.targets.some(isModuleLoaded) ? 'NOT applied at runtime' : 'not applied yet';
 };
 
-export const checkPatches = defineTool({
-	name: 'check_patches',
-	description: `Replay registered patches and report unmatched or ambiguous finds, ineffective replacements, syntax errors and patches missing at runtime.`,
-	annotations: { readOnlyHint: true },
-	input: v.object({
-		ext: v.pipe(
-			v.optional(v.string()),
-			v.description('Only report patches of this extension. Defaults to all'),
-		),
-		verbose: v.pipe(v.optional(v.boolean(), false), v.description('Also list patches without problems')),
-	}),
-	handler({ ext, verbose }) {
-		const patches = [...getCapture().patches];
-		if (ext && !patches.some((p) => p.ext === ext)) {
-			throw new Error(`Extension ${ext} registered no patches. Check its state with list_extensions.`);
-		}
-
-		// every patch is simulated even when filtering, since patches on the same module affect each other
-		const reports = simulateAll(patches);
-		const byExt = new Map<string, string[]>();
-		let total = 0;
-		let problems = 0;
-
-		for (const patch of patches) {
-			if (ext && patch.ext !== ext) {
-				continue;
+/**
+ * registers the `check_patches` tool.
+ *
+ * @param registry registry to add the tool to
+ */
+export const registerCheckPatches = (registry: ToolRegistry): void => {
+	registry.define({
+		name: 'check_patches',
+		description: `Replay registered patches and report unmatched or ambiguous finds, ineffective replacements, syntax errors and patches missing at runtime.`,
+		annotations: { readOnlyHint: true },
+		input: v.object({
+			ext: v.pipe(
+				v.optional(v.string()),
+				v.description('Only report patches of this extension. Defaults to all'),
+			),
+			verbose: v.pipe(v.optional(v.boolean(), false), v.description('Also list patches without problems')),
+		}),
+		handler({ ext, verbose }) {
+			const patches = [...getCapture().patches];
+			if (ext && !patches.some((p) => p.ext === ext)) {
+				throw new Error(`Extension ${ext} registered no patches. Check its state with list_extensions.`);
 			}
-			total++;
 
-			const report = reports.get(patch)!;
-			const find = `find ${matcherToString(patch.find)}`;
-			const state = runtimeState(patch, report);
-			let lines: string[] = [];
+			// every patch is simulated even when filtering, since patches on the same module affect each other
+			const reports = simulateAll(patches);
+			const byExt = new Map<string, string[]>();
+			let total = 0;
+			let problems = 0;
 
-			const target = report.targets.join(', ');
-			if (report.skipped) {
-				if (verbose) {
-					lines = [`  #${patch.id} ${find}: skipped (prerequisite false)`];
+			for (const patch of patches) {
+				if (ext && patch.ext !== ext) {
+					continue;
 				}
-			} else if (report.issues.length) {
-				problems++;
-				lines = [
-					`  #${patch.id} ${find}${target ? ` -> module ${target}` : ''}${state ? ` (${state})` : ''}:`,
-					...report.issues.map((s) => `    ${s}`),
-				];
-			} else if (verbose) {
-				lines = [`  #${patch.id} ${find} -> module ${target}: ok (${state})`];
-			}
+				total++;
 
-			if (lines.length) {
-				const existing = byExt.get(patch.ext);
-				if (existing) {
-					existing.push(...lines);
-				} else {
-					byExt.set(patch.ext, lines);
+				const report = reports.get(patch)!;
+				const find = `find ${matcherToString(patch.find)}`;
+				const state = runtimeState(patch, report);
+				let lines: string[] = [];
+
+				const target = report.targets.join(', ');
+				if (report.skipped) {
+					if (verbose) {
+						lines = [`  #${patch.id} ${find}: skipped (prerequisite false)`];
+					}
+				} else if (report.issues.length) {
+					problems++;
+					lines = [
+						`  #${patch.id} ${find}${target ? ` -> module ${target}` : ''}${state ? ` (${state})` : ''}:`,
+						...report.issues.map((s) => `    ${s}`),
+					];
+				} else if (verbose) {
+					lines = [`  #${patch.id} ${find} -> module ${target}: ok (${state})`];
+				}
+
+				if (lines.length) {
+					const existing = byExt.get(patch.ext);
+					if (existing) {
+						existing.push(...lines);
+					} else {
+						byExt.set(patch.ext, lines);
+					}
 				}
 			}
-		}
 
-		const out = [`Checked ${pluralize(total, 'patch', 'patches')}: ${pluralize(problems, 'problem')}`];
-		for (const [id, lines] of byExt) {
-			out.push(`${id}:`, ...lines);
-		}
-		return out.join('\n');
-	},
-});
+			const out = [`Checked ${pluralize(total, 'patch', 'patches')}: ${pluralize(problems, 'problem')}`];
+			for (const [id, lines] of byExt) {
+				out.push(`${id}:`, ...lines);
+			}
+			return out.join('\n');
+		},
+	});
+};

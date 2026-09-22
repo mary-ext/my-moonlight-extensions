@@ -3,7 +3,7 @@ import * as v from 'valibot';
 import { ChannelTypes, Endpoints, Permissions } from '@moonlight-mod/wp/discord/Constants';
 
 import { pluralize } from '#/lib/text.ts';
-import { IntSchema, defineTool } from '#/lib/tool.ts';
+import { IntSchema, type ToolRegistry } from '#/lib/tool.ts';
 
 import { type Names, channelName, formatDate, formatUser } from './lib/format.ts';
 import { discordGet } from './lib/http.ts';
@@ -12,79 +12,86 @@ import { acquireDiscordLock } from './lib/read-lock.ts';
 import { compareSnowflakes, snowflakeToDate, SnowflakeSchema } from './lib/snowflake.ts';
 import { ActiveThreadsStore, PermissionStore } from './lib/stores.ts';
 
-export const listThreads = defineTool({
-	name: 'list_threads',
-	description: `List channel threads or forum and media posts.`,
-	annotations: { readOnlyHint: true, openWorldHint: true },
-	input: v.object({
-		channelId: SnowflakeSchema('Text, announcement, forum or media channel ID'),
-		offset: v.pipe(
-			v.optional(IntSchema(0, 10_000), 0),
-			v.description('Archived threads to skip, from the previous result'),
-		),
-	}),
-	async handler({ channelId, offset }) {
-		using _lock = await acquireDiscordLock();
+/**
+ * registers the `list_threads` tool.
+ *
+ * @param registry registry to add the tool to
+ */
+export const registerListThreads = (registry: ToolRegistry): void => {
+	registry.define({
+		name: 'list_threads',
+		description: `List channel threads or forum and media posts.`,
+		annotations: { readOnlyHint: true, openWorldHint: true },
+		input: v.object({
+			channelId: SnowflakeSchema('Text, announcement, forum or media channel ID'),
+			offset: v.pipe(
+				v.optional(IntSchema(0, 10_000), 0),
+				v.description('Archived threads to skip, from the previous result'),
+			),
+		}),
+		async handler({ channelId, offset }) {
+			using _lock = await acquireDiscordLock();
 
-		const names = storeNames();
+			const names = storeNames();
 
-		const channel = names.channel(channelId);
-		if (!channel || !THREAD_PARENT_TYPES.has(channel.type)) {
-			throw new Error(`${channelId} isn't a server channel that can have threads; use list_channels`);
-		}
-		const guildId: string = channel.guild_id;
-
-		const tagNames = new Map<string, string>();
-		for (const tag of channel.availableTags ?? []) {
-			tagNames.set(tag.id, tag.name);
-		}
-
-		const lines = [channelName(channel, names)];
-
-		// active threads aren't paginated; include them only on the first page
-		if (offset === 0) {
-			const active: any[] = Object.values<any>(
-				ActiveThreadsStore.value.getThreadsForParent(guildId, channelId),
-			)
-				.map(({ id }) => names.channel(id))
-				.filter((thread) => thread && PermissionStore.value.can(Permissions.VIEW_CHANNEL, thread))
-				.toSorted((a, b) => compareSnowflakes(b.lastMessageId ?? b.id, a.lastMessageId ?? a.id));
-
-			lines.push('', `${pluralize(active.length, 'active thread')}:`);
-			for (const thread of active) {
-				lines.push(threadLine(fromRecord(thread, names), names, tagNames));
+			const channel = names.channel(channelId);
+			if (!channel || !THREAD_PARENT_TYPES.has(channel.type)) {
+				throw new Error(`${channelId} isn't a server channel that can have threads; use list_channels`);
 			}
-		}
+			const guildId: string = channel.guild_id;
 
-		if (!PermissionStore.value.can(Permissions.READ_MESSAGE_HISTORY, channel)) {
-			lines.push('', `archived threads unavailable: missing read message history permission`);
+			const tagNames = new Map<string, string>();
+			for (const tag of channel.availableTags ?? []) {
+				tagNames.set(tag.id, tag.name);
+			}
+
+			const lines = [channelName(channel, names)];
+
+			// active threads aren't paginated; include them only on the first page
+			if (offset === 0) {
+				const active: any[] = Object.values<any>(
+					ActiveThreadsStore.value.getThreadsForParent(guildId, channelId),
+				)
+					.map(({ id }) => names.channel(id))
+					.filter((thread) => thread && PermissionStore.value.can(Permissions.VIEW_CHANNEL, thread))
+					.toSorted((a, b) => compareSnowflakes(b.lastMessageId ?? b.id, a.lastMessageId ?? a.id));
+
+				lines.push('', `${pluralize(active.length, 'active thread')}:`);
+				for (const thread of active) {
+					lines.push(threadLine(fromRecord(thread, names), names, tagNames));
+				}
+			}
+
+			if (!PermissionStore.value.can(Permissions.READ_MESSAGE_HISTORY, channel)) {
+				lines.push('', `archived threads unavailable: missing read message history permission`);
+				return lines.join('\n');
+			}
+
+			// bypass the browser's loader, which resets its list and scroll position
+			const body = await discordGet(Endpoints.THREAD_SEARCH(channelId), {
+				archived: 'true',
+				sort_by: 'last_message_time',
+				sort_order: 'desc',
+				limit: String(PAGE_SIZE),
+				tag_setting: 'match_some',
+				offset: String(offset),
+			});
+
+			lines.push('', `archived threads from ${offset}:`);
+			for (const thread of body.threads ?? []) {
+				lines.push(threadLine(fromApi(thread, names), names, tagNames));
+			}
+			if (!body.threads?.length) {
+				lines.push('none');
+			}
+			if (body.has_more) {
+				lines.push('', `more archived: offset=${offset + PAGE_SIZE}`);
+			}
+
 			return lines.join('\n');
-		}
-
-		// bypass the browser's loader, which resets its list and scroll position
-		const body = await discordGet(Endpoints.THREAD_SEARCH(channelId), {
-			archived: 'true',
-			sort_by: 'last_message_time',
-			sort_order: 'desc',
-			limit: String(PAGE_SIZE),
-			tag_setting: 'match_some',
-			offset: String(offset),
-		});
-
-		lines.push('', `archived threads from ${offset}:`);
-		for (const thread of body.threads ?? []) {
-			lines.push(threadLine(fromApi(thread, names), names, tagNames));
-		}
-		if (!body.threads?.length) {
-			lines.push('none');
-		}
-		if (body.has_more) {
-			lines.push('', `more archived: offset=${offset + PAGE_SIZE}`);
-		}
-
-		return lines.join('\n');
-	},
-});
+		},
+	});
+};
 
 // the thread browser's page size
 const PAGE_SIZE = 25;

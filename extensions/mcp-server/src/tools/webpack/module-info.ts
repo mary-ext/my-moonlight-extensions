@@ -3,7 +3,7 @@ import * as v from 'valibot';
 import spacepack from '@moonlight-mod/wp/spacepack_spacepack';
 
 import { describe, stringify } from '#/lib/describe.ts';
-import { IntSchema, defineTool } from '#/lib/tool.ts';
+import { IntSchema, type ToolRegistry } from '#/lib/tool.ts';
 import {
 	ModuleIdSchema,
 	getMappedNames,
@@ -12,25 +12,32 @@ import {
 	moduleExists,
 } from '#/lib/webpack-modules.ts';
 
-export const moduleInfo = defineTool({
-	name: 'module_info',
-	description: `Get a webpack module's load state, moonmap names, applied patches and exports outline.`,
-	annotations: { readOnlyHint: true },
-	input: v.object({
-		id: ModuleIdSchema,
-		depth: v.optional(IntSchema(0, 4), 1),
-	}),
-	handler({ id, depth }) {
-		if (!moduleExists(id)) {
-			throw new Error(`No module with id ${id}`);
-		}
+/**
+ * registers the `module_info` tool.
+ *
+ * @param registry registry to add the tool to
+ */
+export const registerModuleInfo = (registry: ToolRegistry): void => {
+	registry.define({
+		name: 'module_info',
+		description: `Get a webpack module's load state, moonmap names, applied patches and exports outline.`,
+		annotations: { readOnlyHint: true },
+		input: v.object({
+			id: ModuleIdSchema,
+			depth: v.optional(IntSchema(0, 4), 1),
+		}),
+		handler({ id, depth }) {
+			if (!moduleExists(id)) {
+				throw new Error(`No module with id ${id}`);
+			}
 
-		return stringify({
-			id,
-			loaded: isModuleLoaded(id),
-			mappedAs: getMappedNames(id),
-			patchedBy: getPatchedBy(id),
-			exports: isModuleLoaded(id) ? describe(spacepack.cache[id].exports, depth) : '[not loaded]',
-		});
-	},
-});
+			return stringify({
+				id,
+				loaded: isModuleLoaded(id),
+				mappedAs: getMappedNames(id),
+				patchedBy: getPatchedBy(id),
+				exports: isModuleLoaded(id) ? describe(spacepack.cache[id].exports, depth) : '[not loaded]',
+			});
+		},
+	});
+};
