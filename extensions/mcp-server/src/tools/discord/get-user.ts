@@ -48,7 +48,7 @@ const isRedundantBadge = (id: string) => {
 export const registerGetUser = (registry: ToolRegistry): void => {
 	registry.define({
 		name: 'get_user',
-		description: `Look up a user's profile, presence, relationship and mutual servers. Omit the user ID to look up the logged-in user.`,
+		description: `Look up a user's profile, presence, relationship and mutual servers.`,
 		annotations: { readOnlyHint: true, openWorldHint: true },
 		input: v.object({
 			userId: v.optional(SnowflakeSchema('User ID; omit for the logged-in user')),
