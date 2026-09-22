@@ -1,5 +1,8 @@
 a collection of [moonlight](https://moonlight-mod.github.io/) extensions for Discord.
 
+- extensions are located under `extensions/*`
+- other packages are located under `packages/*`
+
 ## development notes
 
 ### project management
