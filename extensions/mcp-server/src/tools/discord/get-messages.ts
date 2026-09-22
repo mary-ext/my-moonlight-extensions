@@ -3,7 +3,7 @@ import * as v from 'valibot';
 import { Endpoints } from '@moonlight-mod/wp/discord/Constants';
 
 import { pluralize } from '#/lib/text.ts';
-import { IntSchema, type ToolRegistry } from '#/lib/tool.ts';
+import type { ToolRegistry } from '#/lib/tool.ts';
 
 import { channelName, formatMessage } from './lib/format.ts';
 import { discordGet } from './lib/http.ts';
@@ -29,9 +29,8 @@ export const registerGetMessages = (registry: ToolRegistry): void => {
 			before: v.optional(SnowflakeSchema('Return messages before this message ID')),
 			after: v.optional(SnowflakeSchema('Return messages after this message ID')),
 			around: v.optional(SnowflakeSchema('Return messages around this message ID, including it')),
-			limit: v.optional(IntSchema(1, 100), 50),
 		}),
-		async handler({ channelId, before, after, around, limit }) {
+		async handler({ channelId, before, after, around }) {
 			const cursorCount = [before, after, around].filter((c) => c !== undefined).length;
 			if (cursorCount > 1) {
 				throw new Error(`Pass at most one of before, after and around`);
@@ -56,10 +55,10 @@ export const registerGetMessages = (registry: ToolRegistry): void => {
 				cursor.around = channelId;
 			}
 
-			let messages = readCached(channelId, cursor, limit);
+			let messages = readCached(channelId, cursor);
 			if (!messages) {
 				const body: any[] = await discordGet(Endpoints.MESSAGES(channelId), {
-					limit: String(limit),
+					limit: String(PAGE_SIZE),
 					before: cursor.before,
 					after: cursor.after,
 					around: cursor.around,
@@ -102,6 +101,8 @@ export const registerGetMessages = (registry: ToolRegistry): void => {
 	});
 };
 
+const PAGE_SIZE = 30;
+
 interface Cursor {
 	before?: string;
 	after?: string;
@@ -113,7 +114,7 @@ interface Cursor {
  *
  * @returns messages oldest first, or null if the cache can't answer the whole page
  */
-const readCached = (channelId: string, { before, after, around }: Cursor, limit: number): any[] | null => {
+const readCached = (channelId: string, { before, after, around }: Cursor): any[] | null => {
 	const cm = MessageStore.value.getMessages(channelId);
 	// `cached` means the window came from the local database and may be stale
 	if (!cm.ready || cm.cached || cm.loadingMore || around !== undefined) {
@@ -137,8 +138,8 @@ const readCached = (channelId: string, { before, after, around }: Cursor, limit:
 		if (i === -1) {
 			return null;
 		}
-		if (i >= limit) {
-			return all.slice(i - limit, i);
+		if (i >= PAGE_SIZE) {
+			return all.slice(i - PAGE_SIZE, i);
 		}
 		return cm.hasMoreBefore ? null : all.slice(0, i);
 	}
@@ -148,8 +149,8 @@ const readCached = (channelId: string, { before, after, around }: Cursor, limit:
 		if (i === -1) {
 			return null;
 		}
-		if (all.length - 1 - i >= limit) {
-			return all.slice(i + 1, i + 1 + limit);
+		if (all.length - 1 - i >= PAGE_SIZE) {
+			return all.slice(i + 1, i + 1 + PAGE_SIZE);
 		}
 		return reachesPresent() ? all.slice(i + 1) : null;
 	}
@@ -157,8 +158,8 @@ const readCached = (channelId: string, { before, after, around }: Cursor, limit:
 	if (!reachesPresent()) {
 		return null;
 	}
-	if (all.length >= limit) {
-		return all.slice(-limit);
+	if (all.length >= PAGE_SIZE) {
+		return all.slice(-PAGE_SIZE);
 	}
 	return cm.hasMoreBefore ? null : all;
 };

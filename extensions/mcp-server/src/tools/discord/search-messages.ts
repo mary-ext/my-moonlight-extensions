@@ -15,8 +15,8 @@ import { ChannelStore, UserStore } from './lib/stores.ts';
 const SEARCH_TIMEOUT = 60_000;
 // fixed by the API
 const PAGE_SIZE = 25;
-// the API rejects larger offsets
-const MAX_OFFSET = 9975;
+// the API rejects offsets past 9975
+const MAX_PAGE = 400;
 
 const DateSchema = (description: string) => {
 	return v.pipe(
@@ -56,10 +56,7 @@ export const registerSearchMessages = (registry: ToolRegistry): void => {
 			before: v.optional(DateSchema('Only messages sent before this date')),
 			after: v.optional(DateSchema('Only messages sent after this date')),
 			sort: v.optional(v.picklist(['newest', 'oldest', 'relevance']), 'newest'),
-			offset: v.pipe(
-				v.optional(IntSchema(0, MAX_OFFSET), 0),
-				v.description('Results to skip, in steps of 25'),
-			),
+			page: v.optional(IntSchema(1, MAX_PAGE), 1),
 		}),
 		async handler(args) {
 			if (args.guildId === undefined && args.channelId === undefined) {
@@ -69,6 +66,7 @@ export const registerSearchMessages = (registry: ToolRegistry): void => {
 			using _lock = await acquireDiscordLock();
 
 			const scope = resolveScope(args.guildId, args.channelId);
+			const offset = (args.page - 1) * PAGE_SIZE;
 
 			let sortBy = 'timestamp';
 			let sortOrder = 'desc';
@@ -95,7 +93,7 @@ export const registerSearchMessages = (registry: ToolRegistry): void => {
 				pinned: args.pinned,
 				sort_by: sortBy,
 				sort_order: sortOrder,
-				offset: args.offset,
+				offset,
 			});
 
 			// the UI sets this after its age gate; the API separately enforces account restrictions
@@ -119,7 +117,7 @@ export const registerSearchMessages = (registry: ToolRegistry): void => {
 				await loadMessageMembers(scope.guildId, hits);
 			}
 
-			const shown = hits.length ? `, showing ${args.offset + 1}-${args.offset + hits.length}` : '';
+			const shown = hits.length ? `, showing ${offset + 1}-${offset + hits.length}` : '';
 			const lines = [`${pluralize(body.total_results, 'result')}${shown}`];
 			if (body.doing_deep_historical_index) {
 				lines.push(`Discord is still indexing older messages; results may be incomplete`);
@@ -146,12 +144,11 @@ export const registerSearchMessages = (registry: ToolRegistry): void => {
 				lines.push(formatMessage(hit, context));
 			}
 
-			const nextOffset = args.offset + PAGE_SIZE;
-			if (args.offset + hits.length < body.total_results) {
-				if (nextOffset <= MAX_OFFSET) {
-					lines.push('', `next page: offset=${nextOffset}`);
+			if (offset + hits.length < body.total_results) {
+				if (args.page < MAX_PAGE) {
+					lines.push('', `next page: page=${args.page + 1}`);
 				} else {
-					lines.push('', `pagination limit reached; narrow the search or reverse the sort order`);
+					lines.push('', `end of pagination`);
 				}
 			}
 

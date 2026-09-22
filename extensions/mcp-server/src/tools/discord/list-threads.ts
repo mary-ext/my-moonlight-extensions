@@ -24,12 +24,11 @@ export const registerListThreads = (registry: ToolRegistry): void => {
 		annotations: { readOnlyHint: true, openWorldHint: true },
 		input: v.object({
 			channelId: SnowflakeSchema('Text, announcement, forum or media channel ID'),
-			offset: v.pipe(
-				v.optional(IntSchema(0, 10_000), 0),
-				v.description('Archived threads to skip, from the previous result'),
-			),
+			page: v.optional(IntSchema(1, 400), 1),
 		}),
-		async handler({ channelId, offset }) {
+		async handler({ channelId, page }) {
+			const offset = (page - 1) * PAGE_SIZE;
+
 			using _lock = await acquireDiscordLock();
 
 			const names = storeNames();
@@ -48,7 +47,7 @@ export const registerListThreads = (registry: ToolRegistry): void => {
 			const lines = [channelName(channel, names)];
 
 			// active threads aren't paginated; include them only on the first page
-			if (offset === 0) {
+			if (page === 1) {
 				const active: any[] = Object.values<any>(
 					ActiveThreadsStore.value.getThreadsForParent(guildId, channelId),
 				)
@@ -77,7 +76,7 @@ export const registerListThreads = (registry: ToolRegistry): void => {
 				offset: String(offset),
 			});
 
-			lines.push('', `archived threads from ${offset}:`);
+			lines.push('', `archived threads, page ${page}:`);
 			for (const thread of body.threads ?? []) {
 				lines.push(threadLine(fromApi(thread, names), names, tagNames));
 			}
@@ -85,7 +84,7 @@ export const registerListThreads = (registry: ToolRegistry): void => {
 				lines.push('none');
 			}
 			if (body.has_more) {
-				lines.push('', `more archived: offset=${offset + PAGE_SIZE}`);
+				lines.push('', `more archived: page=${page + 1}`);
 			}
 
 			return lines.join('\n');
