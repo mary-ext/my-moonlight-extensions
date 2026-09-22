@@ -1,12 +1,12 @@
 import { errorResult, textResult } from '@mary-ext/moonlight-mcp/protocol';
 import type { CallToolResult, ToolAnnotations, ToolInfo } from '@mary-ext/moonlight-mcp/types';
 
-import { toJsonSchema } from '@valibot/to-json-schema';
+import { type JsonSchema, toJsonSchema } from '@valibot/to-json-schema';
 import * as v from 'valibot';
 
 import { describe, stringify } from './describe.ts';
 
-type ObjectSchema = v.ObjectSchema<v.ObjectEntries, v.ErrorMessage<v.ObjectIssue> | undefined>;
+type ObjectSchema = v.GenericSchema<Record<string, unknown>>;
 
 /**
  * creates an inclusive integer range schema.
@@ -56,11 +56,26 @@ export class ToolRegistry {
 	 * @returns tool names, descriptions and JSON schemas
 	 */
 	list(): ToolInfo[] {
-		return (this.#infoCache ??= [...this.#tools.values()].map(({ name, description, input, annotations }) => {
-			// input mode, so fields with defaults show as optional
-			const { $schema: _, ...inputSchema } = toJsonSchema(input, { typeMode: 'input', errorMode: 'ignore' });
-			return { name, description, inputSchema, annotations };
-		}));
+		let info = this.#infoCache;
+		if (info === null) {
+			info = this.#tools
+				.values()
+				.map(({ name, description, input, annotations }) => {
+					const { $schema: _, ...inputSchema } = toJsonSchema(input, {
+						typeMode: 'input',
+						errorMode: 'ignore',
+						overrideSchema: ({ valibotSchema, jsonSchema }) => {
+							// MCP requires a top-level object schema
+							return valibotSchema === input ? flattenObjects(jsonSchema) : undefined;
+						},
+					});
+
+					return { name, description, inputSchema, annotations };
+				})
+				.toArray();
+		}
+
+		return info;
 	}
 
 	/**
@@ -90,3 +105,72 @@ export class ToolRegistry {
 		}
 	}
 }
+
+const isObjectSchema = (schema: JsonSchema | boolean): schema is JsonSchema => {
+	return typeof schema === 'object' && schema.type === 'object';
+};
+
+// annotations don't change that `not: {}` rejects every value
+const isNever = (schema: JsonSchema | boolean): boolean => {
+	if (typeof schema === 'boolean') {
+		return !schema;
+	}
+
+	const { not } = schema;
+
+	return not === true || (typeof not === 'object' && Object.keys(not).length === 0);
+};
+
+// flattening loses cross-property constraints; Valibot still validates tool arguments
+const flattenObjects = (schema: JsonSchema): JsonSchema | undefined => {
+	let combinator: 'allOf' | 'anyOf';
+	if (schema.allOf !== undefined) {
+		combinator = 'allOf';
+	} else if (schema.anyOf !== undefined) {
+		combinator = 'anyOf';
+	} else {
+		return undefined;
+	}
+
+	const { [combinator]: members = [], ...rest } = schema;
+
+	// nested combinators can also describe the root object
+	const options = members.map((member) => {
+		return typeof member === 'object' ? (flattenObjects(member) ?? member) : member;
+	});
+
+	if (!options.every(isObjectSchema)) {
+		return undefined;
+	}
+
+	const properties = new Map<string, Map<string, JsonSchema | boolean>>();
+	for (const option of options) {
+		for (const [key, property] of Object.entries(option.properties ?? {})) {
+			// a property forbidden in one branch may be allowed in another
+			if (combinator === 'anyOf' && isNever(property)) {
+				continue;
+			}
+
+			const variants = properties.get(key) ?? new Map<string, JsonSchema | boolean>();
+			variants.set(JSON.stringify(property), property);
+			properties.set(key, variants);
+		}
+	}
+
+	const required = properties.keys().filter((key) => {
+		const requires = (option: JsonSchema) => option.required?.includes(key) ?? false;
+		return combinator === 'anyOf' ? options.every(requires) : options.some(requires);
+	});
+
+	return {
+		...rest,
+		type: 'object',
+		properties: Object.fromEntries(
+			properties.entries().map(([key, variants]) => {
+				const schemas = [...variants.values()];
+				return [key, schemas.length === 1 ? schemas[0] : { [combinator]: schemas }];
+			}),
+		),
+		required: required.toArray(),
+	};
+};

@@ -27,6 +27,21 @@ const DateSchema = (description: string) => {
 	);
 };
 
+const TargetSchema = v.union(
+	[
+		v.object({
+			guildId: v.optional(SnowflakeSchema('Server to search')),
+			channelId: SnowflakeSchema('Channel, thread or DM to search; narrows a server search'),
+		}),
+		v.object({
+			guildId: SnowflakeSchema('Server to search'),
+			// forbids passing an invalid `channelId`
+			channelId: v.optional(v.never()),
+		}),
+	],
+	`Pass guildId or channelId`,
+);
+
 /**
  * registers the `search_messages` tool.
  *
@@ -37,35 +52,32 @@ export const registerSearchMessages = (registry: ToolRegistry): void => {
 		name: 'search_messages',
 		description: `Search messages in a server, channel, thread or DM.`,
 		annotations: { readOnlyHint: true, openWorldHint: true },
-		input: v.object({
-			guildId: v.optional(SnowflakeSchema('Server to search')),
-			channelId: v.optional(SnowflakeSchema('Channel, thread or DM to search; narrows a server search')),
-			content: v.pipe(v.optional(v.string()), v.description('Words to match in the message text')),
-			authorIds: v.optional(v.array(SnowflakeSchema('from: user ID'))),
-			mentions: v.optional(v.array(SnowflakeSchema('mentions: user ID'))),
-			has: v.pipe(
-				v.optional(
-					v.array(
-						v.picklist(['link', 'embed', 'file', 'image', 'video', 'sound', 'sticker', 'poll', 'snapshot']),
+		input: v.intersect([
+			TargetSchema,
+			v.object({
+				content: v.pipe(v.optional(v.string()), v.description('Words to match in the message text')),
+				authorIds: v.optional(v.array(SnowflakeSchema('from: user ID'))),
+				mentions: v.optional(v.array(SnowflakeSchema('mentions: user ID'))),
+				has: v.pipe(
+					v.optional(
+						v.array(
+							v.picklist(['link', 'embed', 'file', 'image', 'video', 'sound', 'sticker', 'poll', 'snapshot']),
+						),
 					),
+					v.description('has: kinds of content; snapshot means a forwarded message'),
 				),
-				v.description('has: kinds of content; snapshot means a forwarded message'),
-			),
-			authorType: v.optional(v.picklist(['user', 'bot', 'webhook'])),
-			pinned: v.optional(v.boolean()),
-			before: v.optional(DateSchema('Only messages sent before this date')),
-			after: v.optional(DateSchema('Only messages sent after this date')),
-			sort: v.optional(v.picklist(['newest', 'oldest', 'relevance']), 'newest'),
-			page: v.optional(IntSchema(1, MAX_PAGE), 1),
-		}),
+				authorType: v.optional(v.picklist(['user', 'bot', 'webhook'])),
+				pinned: v.optional(v.boolean()),
+				before: v.optional(DateSchema('Only messages sent before this date')),
+				after: v.optional(DateSchema('Only messages sent after this date')),
+				sort: v.optional(v.picklist(['newest', 'oldest', 'relevance']), 'newest'),
+				page: v.optional(IntSchema(1, MAX_PAGE), 1),
+			}),
+		]),
 		async handler(args) {
-			if (args.guildId === undefined && args.channelId === undefined) {
-				throw new Error(`Pass guildId or channelId`);
-			}
-
 			using _lock = await acquireDiscordLock();
 
-			const scope = resolveScope(args.guildId, args.channelId);
+			const scope = resolveScope(args);
 			const offset = (args.page - 1) * PAGE_SIZE;
 
 			let sortBy = 'timestamp';
@@ -165,8 +177,10 @@ interface SearchScope {
 	channelIds: string[] | undefined;
 }
 
-const resolveScope = (guildId: string | undefined, channelId: string | undefined): SearchScope => {
-	if (channelId !== undefined) {
+const resolveScope = (target: v.InferOutput<typeof TargetSchema>): SearchScope => {
+	if (target.channelId !== undefined) {
+		const { channelId, guildId } = target;
+
 		const channel = ChannelStore.value.getChannel(channelId);
 		if (!channel) {
 			throw new Error(`Unknown channel ${channelId}; use list_channels`);
@@ -182,6 +196,7 @@ const resolveScope = (guildId: string | undefined, channelId: string | undefined
 		if (guildId !== undefined && guildId !== channel.guild_id) {
 			throw new Error(`Channel ${channelId} isn't in server ${guildId}`);
 		}
+
 		// Discord searches server channels through the server, as with `in:#channel`
 		return {
 			searchType: 'GUILD',
@@ -189,14 +204,17 @@ const resolveScope = (guildId: string | undefined, channelId: string | undefined
 			guildId: channel.guild_id,
 			channelIds: [channel.id],
 		};
-	}
-
-	if (guildId !== undefined) {
+	} else {
+		const { guildId } = target;
 		requireGuild(guildId);
-		return { searchType: 'GUILD', searchId: guildId, guildId, channelIds: undefined };
-	}
 
-	throw new Error(`Pass guildId or channelId`);
+		return {
+			searchType: 'GUILD',
+			searchId: guildId,
+			guildId,
+			channelIds: undefined,
+		};
+	}
 };
 
 const runSearch = ({ searchId, searchType }: SearchScope, query: object) => {
