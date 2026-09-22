@@ -1,13 +1,12 @@
 import type { ExtensionWebExports } from '@moonlight-mod/types';
 
 export const patches: ExtensionWebExports['patches'] = [
-	// append before the toolbar trims overflow, so our button is dropped first; reuse its tooltip component
 	{
 		find: '.downloadUrl,showDownload:',
 		replace: {
 			match:
 				/(?<=isSingleMosaicItem:\i\}=(\i),.{0,1500}?\(0,\i\.jsx\)\((\i\.\i),\{text:.{0,1500}?)let (\i)=Math\.max\(0,(\i)\.length-\i\)/,
-			replacement: '$4.push(...require("imageDownloader_button").renderButtons($1,$2));$&',
+			replacement: '$4.unshift(...require("imageDownloader_button").renderButtons($1,$2));$&',
 		},
 	},
 ];
