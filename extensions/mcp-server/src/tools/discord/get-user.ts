@@ -30,6 +30,16 @@ const RELATIONSHIPS: Record<number, string> = {
 	4: 'outgoing friend request',
 };
 
+const PREMIUM_TIERS: Record<number, string> = {
+	1: 'nitro classic',
+	2: 'nitro',
+	3: 'nitro basic',
+};
+
+const isRedundantBadge = (id: string) => {
+	return id === 'account_age' || id === 'premium' || id.startsWith('premium_tenure_');
+};
+
 /**
  * registers the `get_user` tool.
  *
@@ -38,14 +48,17 @@ const RELATIONSHIPS: Record<number, string> = {
 export const registerGetUser = (registry: ToolRegistry): void => {
 	registry.define({
 		name: 'get_user',
-		description: `Look up a user's profile, presence, relationship and mutual servers.`,
+		description: `Look up a user's profile, presence, relationship and mutual servers. Omit the user ID to look up the logged-in user.`,
 		annotations: { readOnlyHint: true, openWorldHint: true },
 		input: v.object({
-			userId: SnowflakeSchema('User ID'),
+			userId: v.optional(SnowflakeSchema('User ID; omit for the logged-in user')),
 			guildId: v.optional(SnowflakeSchema(`Guild ID for guild-specific profile information`)),
 		}),
-		async handler({ userId, guildId }) {
+		async handler({ userId: requestedId, guildId }) {
 			using _lock = await acquireDiscordLock();
+
+			const currentUserId: string = UserStore.value.getCurrentUser().id;
+			const userId = requestedId ?? currentUserId;
 
 			let profileError: unknown;
 			try {
@@ -93,14 +106,21 @@ export const registerGetUser = (registry: ToolRegistry): void => {
 				if (bio) {
 					lines.push(`bio:\n${indent(bio, '  ')}`);
 				}
-				if (profile.badges?.length) {
-					lines.push(`badges: ${profile.badges.map((b: any) => b.description).join(', ')}`);
+				if (profile.premiumSince) {
+					const tier = PREMIUM_TIERS[profile.premiumType] ?? 'nitro';
+					lines.push(`premium: ${tier}, since ${formatDate(profile.premiumSince)}`);
+				}
+				{
+					const badges = profile.badges?.filter((b: any) => !isRedundantBadge(b.id)) ?? [];
+					if (badges.length) {
+						lines.push(`badges: ${badges.map((b: any) => b.description).join(', ')}`);
+					}
 				}
 				if (profile.connectedAccounts?.length) {
-					const accounts = profile.connectedAccounts.map((a: any) => {
-						return `${a.type}: ${a.name}${a.verified ? ' (verified)' : ''}`;
-					});
-					lines.push(`connections: ${accounts.join(', ')}`);
+					lines.push('connections:');
+					for (const account of profile.connectedAccounts) {
+						lines.push(`  ${account.type}: ${account.name}${account.verified ? ' ✓' : ''}`);
+					}
 				}
 			} else {
 				const reason = profileError !== undefined ? ` (${errorMessage(toApiError(profileError))})` : '';
@@ -152,17 +172,20 @@ export const registerGetUser = (registry: ToolRegistry): void => {
 				}
 			}
 
-			const mutualGuilds = UserProfileStore.value.getMutualGuilds(userId);
-			if (mutualGuilds?.length) {
-				const names = mutualGuilds.map(({ guild, nick }: any) =>
-					nick ? `${guild.name} (as ${nick})` : guild.name,
-				);
-				lines.push(`mutual servers (${mutualGuilds.length}): ${names.join(', ')}`);
-			}
+			if (userId !== currentUserId) {
+				const mutualGuilds = UserProfileStore.value.getMutualGuilds(userId);
+				if (mutualGuilds?.length) {
+					const names = mutualGuilds.map(({ guild, nick }: any) => {
+						return nick ? `${guild.name} (as ${nick})` : guild.name;
+					});
 
-			const mutualFriends = UserProfileStore.value.getMutualFriendsCount(userId);
-			if (mutualFriends) {
-				lines.push(`mutual friends: ${mutualFriends}`);
+					lines.push(`mutual servers (${mutualGuilds.length}): ${names.join(', ')}`);
+				}
+
+				const mutualFriends = UserProfileStore.value.getMutualFriendsCount(userId);
+				if (mutualFriends) {
+					lines.push(`mutual friends: ${mutualFriends}`);
+				}
 			}
 
 			return lines.join('\n');
