@@ -177,6 +177,7 @@ export const defineExtensionConfig = (config: ExtensionConfig): RolldownOptions[
 					jsdoc: !production,
 				},
 				sourcemap: production ? false : 'inline',
+				generatedCode: { symbols: false },
 			},
 			experimental: {
 				attachDebugInfo: production ? 'none' : 'simple',
