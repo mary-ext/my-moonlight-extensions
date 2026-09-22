@@ -1,4 +1,3 @@
-// extension code running in Electron's main and preload processes, and the build config
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
