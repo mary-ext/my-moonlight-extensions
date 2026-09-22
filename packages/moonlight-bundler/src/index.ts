@@ -170,7 +170,11 @@ export const defineExtensionConfig = (config: ExtensionConfig): RolldownOptions[
 				entryFileNames: fileName,
 				format: 'cjs',
 				codeSplitting: false,
-				minify: production,
+				minify: production && {
+					compress: { joinVars: false, sequences: false },
+					mangle: false,
+					codegen: { removeWhitespace: false },
+				},
 				comments: {
 					annotation: false,
 					legal: false,
