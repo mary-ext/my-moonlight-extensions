@@ -3,7 +3,7 @@ import { defineExtensionConfig } from '@mary-ext/moonlight-bundler';
 export default defineExtensionConfig({
 	manifest: {
 		id: 'muteAuthors',
-		version: '0.0.0',
+		version: '0.1.0',
 		apiLevel: 2,
 		meta: {
 			name: 'Mute Authors',
