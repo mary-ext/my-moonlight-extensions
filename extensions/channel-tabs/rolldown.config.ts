@@ -3,7 +3,7 @@ import { defineExtensionConfig } from '@mary-ext/moonlight-bundler';
 export default defineExtensionConfig({
 	manifest: {
 		id: 'channelTabs',
-		version: '0.0.0',
+		version: '0.010',
 		apiLevel: 2,
 		environment: 'desktop',
 		meta: {
