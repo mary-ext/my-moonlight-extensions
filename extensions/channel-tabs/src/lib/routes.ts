@@ -1,8 +1,7 @@
 import type React from 'react';
 
+import { FriendsIcon, type IconProps, QuestsIcon, ShopIcon } from '@moonlight-mod/wp/channelTabs_discord';
 import { Routes } from '@moonlight-mod/wp/discord/Constants';
-
-import { FriendsIcon, QuestsIcon, ShopIcon } from '#/lib/icons.tsx';
 
 /** a non-channel page supported by tabs */
 export interface RoutePage {
@@ -10,7 +9,7 @@ export interface RoutePage {
 	/** whether to match subpaths */
 	prefix: boolean;
 	label: string;
-	icon: React.ComponentType<{ className?: string }>;
+	icon: React.ComponentType<IconProps> | undefined;
 }
 
 const ROUTE_PAGES: RoutePage[] = [

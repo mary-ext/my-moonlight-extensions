@@ -132,6 +132,22 @@ export interface GuildIconComponent extends React.ComponentClass<{
 	Sizes: Record<'SMOL' | 'MINI' | 'SMALLER' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'XLARGE', string>;
 }
 
+const pickIcon = (label: string, key: 'friendsIcon' | 'pinIcon' | 'questsIcon' | 'shopIcon') => {
+	return pick(label, modules[key], (exports) => spacepack.findFunctionByStrings(exports, ...FINDS[key]));
+};
+
+/** Discord's FriendsIcon */
+export const FriendsIcon: React.ComponentType<IconProps> | undefined = pickIcon('FriendsIcon', 'friendsIcon');
+
+/** Discord's PinIcon */
+export const PinIcon: React.ComponentType<IconProps> | undefined = pickIcon('PinIcon', 'pinIcon');
+
+/** Discord's QuestsIcon */
+export const QuestsIcon: React.ComponentType<IconProps> | undefined = pickIcon('QuestsIcon', 'questsIcon');
+
+/** Discord's ShopIcon */
+export const ShopIcon: React.ComponentType<IconProps> | undefined = pickIcon('ShopIcon', 'shopIcon');
+
 /** a guild's icon, falling back to its acronym */
 export const GuildIcon: GuildIconComponent | undefined = pick('GuildIcon', modules.guildIcon, (exports) =>
 	spacepack.findObjectFromKey(exports, 'Sizes'),

@@ -6,6 +6,7 @@ import {
 	getChannelIcon,
 	GuildIcon,
 	NumberBadge,
+	PinIcon,
 	TitleBarButton,
 	useDrag,
 	useDrop,
@@ -47,7 +48,6 @@ import UserGuildSettingsStore from '@moonlight-mod/wp/discord/stores/UserGuildSe
 import AvatarUtils from '@moonlight-mod/wp/discord/utils/AvatarUtils';
 import NativeUtils from '@moonlight-mod/wp/discord/utils/NativeUtils';
 
-import { PinIcon } from '#/lib/icons.tsx';
 import { getRoutePage, isFavoritesGuild } from '#/lib/routes.ts';
 import type { Channel, UserStore as UserStoreType } from '#/lib/types.ts';
 
@@ -101,10 +101,10 @@ const TabIcon = ({ tab, channel }: { tab: Tab; channel: Channel | null | undefin
 
 	if (entry.kind === 'route') {
 		const page = getRoutePage(entry.routePath);
-		if (page === undefined) {
+		if (page?.icon === undefined) {
 			return null;
 		}
-		return <page.icon className="channelTabs-icon" />;
+		return <page.icon size="xs" color="currentColor" className="channelTabs-icon" />;
 	}
 
 	if (isFavoritesGuild(guildId)) {
@@ -271,7 +271,7 @@ const ChannelTab = React.memo(function ChannelTab({
 	if (tab.pinned) {
 		trailing = (
 			<div className="channelTabs-pinIndicator" aria-hidden>
-				<PinIcon />
+				{PinIcon !== undefined && <PinIcon size="xs" color="currentColor" />}
 				{UnreadDot !== undefined && <UnreadDot className="channelTabs-pinUnreadDot" color="var(--white)" />}
 			</div>
 		);
