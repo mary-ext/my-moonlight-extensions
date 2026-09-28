@@ -1,0 +1,8 @@
+// the build config
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["node"]
+	},
+	"include": ["rolldown.config.ts"]
+}

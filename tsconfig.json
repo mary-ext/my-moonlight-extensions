@@ -1,6 +1,7 @@
 {
 	"files": [],
 	"references": [
+		{ "path": "./extensions/channel-tabs" },
 		{ "path": "./extensions/image-downloader" },
 		{ "path": "./extensions/mcp-server" },
 		{ "path": "./extensions/sample-extension" },

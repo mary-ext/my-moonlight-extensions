@@ -1,0 +1,175 @@
+/* Discord only expands this section for native tabs */
+:has(> .channelTabs-tabBar) {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.channelTabs-tabBar {
+	position: relative;
+	display: flex;
+	flex: 1 1 auto;
+	align-items: stretch;
+	min-width: 0;
+	height: var(--custom-app-top-bar-height);
+	app-region: drag;
+}
+
+.platform-web .channelTabs-tabBar {
+	margin-inline-start: var(--custom-guild-list-width);
+}
+
+.channelTabs-dropIndicator {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: 1;
+	width: 2px;
+	border-radius: 1px;
+	background-color: var(--control-brand-foreground);
+	pointer-events: none;
+	transition: left 0.1s ease-out;
+}
+
+.channelTabs-tab {
+	position: relative;
+	display: flex;
+	flex: 1 1 0;
+	align-items: center;
+	min-width: 0;
+	max-width: 200px;
+	padding-inline-end: var(--space-4);
+	color: var(--interactive-text-default);
+	app-region: no-drag;
+}
+
+.channelTabs-tab:hover {
+	background-color: var(--interactive-background-hover);
+	color: var(--interactive-text-hover);
+}
+
+.channelTabs-tab:not(:first-child)::before {
+	content: '';
+	position: absolute;
+	top: 20%;
+	inset-inline-start: 0;
+	width: 1px;
+	height: 60%;
+	background-color: var(--border-subtle);
+}
+
+.channelTabs-tabActive::before,
+.channelTabs-tabActive + .channelTabs-tab::before {
+	display: none;
+}
+
+.channelTabs-tabActive {
+	background-color: var(--interactive-background-active);
+	color: var(--interactive-text-active);
+}
+
+.channelTabs-tabDragging {
+	opacity: 0.35;
+}
+
+.channelTabs-tabButton {
+	display: flex;
+	flex: 1 1 auto;
+	gap: var(--space-8);
+	align-items: center;
+	min-width: 0;
+	height: 100%;
+	padding-inline: var(--space-8) var(--space-4);
+	cursor: pointer;
+}
+
+.channelTabs-closeButton {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	border-radius: var(--radius-xs);
+	cursor: pointer;
+}
+
+.channelTabs-closeButton:hover {
+	background-color: var(--background-mod-strong);
+}
+
+.channelTabs-tab:not(.channelTabs-tabActive) .channelTabs-closeButton {
+	display: none;
+}
+
+.channelTabs-tab:not(.channelTabs-tabActive):hover .channelTabs-closeButton {
+	display: flex;
+}
+
+.channelTabs-tab:not(.channelTabs-tabActive):hover .channelTabs-unreadIndicator {
+	display: none;
+}
+
+.channelTabs-newTabButton {
+	display: flex;
+	flex-shrink: 0;
+	align-self: center;
+	margin-inline-start: calc((var(--custom-app-top-bar-height) - var(--space-24)) / 2);
+	app-region: no-drag;
+}
+
+.channelTabs-pinIndicator {
+	position: relative;
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+}
+
+.channelTabs-pinUnreadDot {
+	position: absolute;
+	inset-block-end: -2px;
+	inset-inline-end: -2px;
+	pointer-events: none;
+}
+
+.channelTabs-guildIcon {
+	flex-shrink: 0;
+	border-radius: var(--radius-xs);
+}
+
+.channelTabs-dmIcon {
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+}
+
+.channelTabs-icon {
+	flex-shrink: 0;
+}
+
+.channelTabs-iconWrapper {
+	position: relative;
+	display: flex;
+	flex-shrink: 0;
+}
+
+.channelTabs-mentionBadge {
+	position: absolute;
+	inset-block-end: -3px;
+	inset-inline-end: -3px;
+	pointer-events: none;
+	transform: scale(0.85);
+	transform-origin: right bottom;
+}
+
+.channelTabs-unreadIndicator {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+}
