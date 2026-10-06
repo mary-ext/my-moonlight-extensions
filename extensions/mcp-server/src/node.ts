@@ -1,6 +1,12 @@
 import { ipcRenderer } from 'electron';
 
-import { IpcChannel, type LogPage, type LogQuery, type RendererInfo } from './lib/ipc.ts';
+import {
+	IpcChannel,
+	type LogPage,
+	type LogQuery,
+	type RendererInfo,
+	type SaveMediaRequest,
+} from './lib/ipc.ts';
 
 ipcRenderer.send(IpcChannel.Hook);
 
@@ -22,6 +28,25 @@ export const attach = (info: RendererInfo): Promise<string> => {
  */
 export const getLogs = (query: LogQuery): Promise<LogPage> => {
 	return ipcRenderer.invoke(IpcChannel.GetLogs, query);
+};
+
+/**
+ * saves a temporary file, overwriting same-named files. files are removed when Discord exits.
+ *
+ * @param request download URL and file name
+ * @returns absolute path in a private temporary directory
+ * @throws on an invalid URL, download failure or write failure
+ */
+export const saveMedia = async (request: SaveMediaRequest): Promise<string> => {
+	try {
+		return await ipcRenderer.invoke(IpcChannel.SaveMedia, request);
+	} catch (err) {
+		// strip Electron's IPC error prefix from tool results
+		const message = err instanceof Error ? err.message : String(err);
+		throw new Error(message.replace(/^Error invoking remote method '[^']*': (?:Error: )?/, ''), {
+			cause: err,
+		});
+	}
 };
 
 /** tells the MCP server this renderer is about to reload, so new tool calls wait for the next one */

@@ -110,14 +110,23 @@ const formatSize = (bytes: number) => {
 };
 
 /**
- * identifies image and video attachments with dimensions.
+ * identifies image attachments.
  *
  * @param attachment attachment as the API returns it
- * @returns whether the attachment has a width and an image or video MIME type
+ * @returns true for an image MIME type with a nonzero width
  */
-export const isVisualAttachment = (attachment: any): boolean => {
-	const type: string = attachment.content_type ?? '';
-	return !!attachment.width && (type.startsWith('image/') || type.startsWith('video/'));
+export const isImageAttachment = (attachment: any): boolean => {
+	return !!attachment.width && !!attachment.content_type?.startsWith('image/');
+};
+
+/**
+ * identifies video attachments.
+ *
+ * @param attachment attachment as the API returns it
+ * @returns true for a `video/` MIME type
+ */
+export const isVideoAttachment = (attachment: any): boolean => {
+	return !!attachment.content_type?.startsWith('video/');
 };
 
 /**
@@ -167,8 +176,8 @@ const formatBody = (message: any, context: NameContext): string[] => {
 	};
 
 	for (const a of message.attachments ?? []) {
-		// omit signed image/video URLs; use get_media to view them
-		const url = isVisualAttachment(a) ? '' : `: ${a.url}`;
+		// signed media URLs belong in get_media
+		const url = isImageAttachment(a) || isVideoAttachment(a) ? '' : `: ${a.url}`;
 		lines.push(`  [attachment] ${formatAttachment(a)}${url}`);
 	}
 

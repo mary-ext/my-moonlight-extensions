@@ -1,6 +1,8 @@
 import * as fs from 'node:fs';
 import * as net from 'node:net';
 import * as path from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 import {
 	SOCKET_IS_FILE,
@@ -23,6 +25,7 @@ import {
 	type LogPage,
 	type LogQuery,
 	type RendererInfo,
+	type SaveMediaRequest,
 } from './lib/ipc.ts';
 import { truncate } from './lib/text.ts';
 
@@ -95,6 +98,68 @@ const getLogs = ({ sinceId, level, filter, limit }: LogQuery): LogPage => {
 
 	return { entries: matching.slice(-limit), nextId: nextLogId - 1, dropped };
 };
+
+// #endregion
+
+// #region media
+
+const CDN_HOSTS: ReadonlySet<string> = new Set(['cdn.discordapp.com', 'media.discordapp.net']);
+
+let mediaDir: string | null = null;
+
+const getMediaDir = () => {
+	// avoid pre-existing paths in shared temp directories
+	mediaDir ??= fs.mkdtempSync(path.join(app.getPath('temp'), 'moonlight-mcp-'));
+	return mediaDir;
+};
+
+const sanitizeFileName = (name: string) => {
+	const clean = name
+		.replace(/[/\\:*?"<>|\x00-\x1f]/g, '_')
+		.replace(/^\.+/, '')
+		.trim()
+		.slice(0, 200);
+
+	return clean || 'media';
+};
+
+const saveMedia = async ({ url, name }: SaveMediaRequest) => {
+	const parsed = URL.parse(url);
+	if (parsed === null || parsed.protocol !== 'https:' || !CDN_HOSTS.has(parsed.hostname)) {
+		throw new Error(`Expected a valid Discord CDN URL`);
+	}
+
+	const res = await fetch(parsed.href, { signal: AbortSignal.timeout(CALL_TIMEOUT) });
+	if (!res.ok) {
+		throw new Error(`Download failed with HTTP ${res.status}`);
+	}
+	if (!res.body) {
+		throw new Error(`Download returned no body`);
+	}
+
+	const dir = getMediaDir();
+	const file = path.join(dir, sanitizeFileName(name));
+	// publish only complete downloads, even with concurrent saves
+	const partial = `${file}.${crypto.randomUUID()}.part`;
+	try {
+		await pipeline(Readable.fromWeb(res.body), fs.createWriteStream(partial));
+		await fs.promises.rename(partial, file);
+	} catch (e) {
+		await fs.promises.rm(partial, { force: true });
+		// a temp cleaner may have removed the directory
+		if (e instanceof Error && 'code' in e && e.code === 'ENOENT' && mediaDir === dir) {
+			mediaDir = null;
+		}
+		throw e;
+	}
+	return file;
+};
+
+process.on('exit', () => {
+	if (mediaDir !== null) {
+		fs.rmSync(mediaDir, { recursive: true, force: true });
+	}
+});
 
 // #endregion
 
@@ -362,6 +427,7 @@ const attach = (wc: WebContents, info: RendererInfo) => {
 ipcMain.on(IpcChannel.Hook, (e) => hookContents(e.sender));
 ipcMain.handle(IpcChannel.Attach, (e, info: RendererInfo) => attach(e.sender, info));
 ipcMain.handle(IpcChannel.GetLogs, (_e, query: LogQuery) => getLogs(query));
+ipcMain.handle(IpcChannel.SaveMedia, (_e, request: SaveMediaRequest) => saveMedia(request));
 ipcMain.handle(IpcChannel.Leave, (e) => {
 	leaving = e.sender;
 });

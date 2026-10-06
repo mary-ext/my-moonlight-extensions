@@ -5,10 +5,11 @@ import * as v from 'valibot';
 import { Endpoints } from '@moonlight-mod/wp/discord/Constants';
 import { HTTP } from '@moonlight-mod/wp/discord/utils/HTTPUtils';
 
+import { getNatives } from '#/lib/natives.ts';
 import { errorMessage, pluralize } from '#/lib/text.ts';
 import type { ToolRegistry } from '#/lib/tool.ts';
 
-import { channelName, formatAttachment, isVisualAttachment } from './lib/format.ts';
+import { channelName, formatAttachment, isImageAttachment, isVideoAttachment } from './lib/format.ts';
 import { discordGet, toApiError } from './lib/http.ts';
 import { storeNames } from './lib/lookup.ts';
 import { createMessageRecord } from './lib/modules.ts';
@@ -24,7 +25,7 @@ import { MessageStore } from './lib/stores.ts';
 export const registerGetMedia = (registry: ToolRegistry): void => {
 	registry.define({
 		name: 'get_media',
-		description: `View images, video thumbnails and stickers from a message.`,
+		description: `View message attachments, embed previews and stickers.`,
 		annotations: { readOnlyHint: true, openWorldHint: true },
 		input: v.object({
 			channelId: SnowflakeSchema('Channel, thread or DM channel ID'),
@@ -45,14 +46,21 @@ export const registerGetMedia = (registry: ToolRegistry): void => {
 			}
 
 			const blocks = await Promise.all(
-				items.map(async ({ label, source }, i): Promise<ContentBlock[]> => {
-					const numbered = `[${i + 1}] ${label}`;
-					if (!source) {
-						return [{ type: 'text', text: numbered }];
-					}
-
+				items.map(async (item, i): Promise<ContentBlock[]> => {
+					const numbered = `[${i + 1}] ${item.label}`;
 					try {
-						return [{ type: 'text', text: numbered }, await fetchImage(source)];
+						switch (item.kind) {
+							case 'file': {
+								const file = await getNatives().saveMedia({ url: item.url, name: item.name });
+								return [{ type: 'text', text: `${numbered}, saved to ${file}` }];
+							}
+							case 'image': {
+								return [{ type: 'text', text: numbered }, await fetchImage(item)];
+							}
+							default: {
+								return [{ type: 'text', text: numbered }];
+							}
+						}
 					} catch (e) {
 						return [{ type: 'text', text: `${numbered} (failed: ${errorMessage(e)})` }];
 					}
@@ -81,12 +89,10 @@ interface ProxySource {
 	params: Record<string, string>;
 }
 
-interface MediaItem {
-	/** description shown above the image */
-	label: string;
-	/** absent for media the proxy can't render */
-	source?: ProxySource;
-}
+type MediaItem =
+	| { kind: 'file'; label: string; url: string; name: string }
+	| ({ kind: 'image'; label: string } & ProxySource)
+	| { kind: 'unavailable'; label: string };
 
 const fitParams = (width: number | undefined, height: number | undefined): Record<string, string> => {
 	if (!width || !height) {
@@ -101,13 +107,13 @@ const collectMedia = (message: any, prefix = ''): MediaItem[] => {
 
 	for (const a of message.attachments ?? []) {
 		const label = `${prefix}attachment ${formatAttachment(a)}`;
-		if (!isVisualAttachment(a)) {
-			items.push({ label: `${label} (preview unavailable)` });
+		if (isVideoAttachment(a)) {
+			// attachment IDs prevent name collisions and keep paths stable across calls
+			items.push({ kind: 'file', label, url: a.url, name: `${a.id}-${a.filename}` });
+		} else if (isImageAttachment(a)) {
+			items.push({ kind: 'image', label, url: a.proxy_url, params: fitParams(a.width, a.height) });
 		} else {
-			items.push({
-				label: a.content_type.startsWith('video/') ? `${label} (thumbnail)` : label,
-				source: { url: a.proxy_url, params: fitParams(a.width, a.height) },
-			});
+			items.push({ kind: 'unavailable', label: `${label} (preview unavailable)` });
 		}
 	}
 
@@ -118,22 +124,23 @@ const collectMedia = (message: any, prefix = ''): MediaItem[] => {
 			const title = e.rawTitle ? ` ${e.rawTitle}` : '';
 			const dimensions = image.width ? `, ${image.width}×${image.height}` : '';
 			items.push({
+				kind: 'image',
 				label: `${prefix}embed${title}${dimensions}: ${e.url ?? image.url}`,
-				source: { url: image.proxyURL, params: fitParams(image.width, image.height) },
+				url: image.proxyURL,
+				params: fitParams(image.width, image.height),
 			});
 		}
 	}
 
 	for (const s of message.stickerItems ?? []) {
 		if (s.format_type === STICKER_LOTTIE) {
-			items.push({ label: `${prefix}sticker ${s.name} (Lottie; preview unavailable)` });
+			items.push({ kind: 'unavailable', label: `${prefix}sticker ${s.name} (Lottie; preview unavailable)` });
 		} else {
 			items.push({
+				kind: 'image',
 				label: `${prefix}sticker ${s.name}`,
-				source: {
-					url: `https://media.discordapp.net/stickers/${s.id}.webp`,
-					params: { size: String(STICKER_SIZE) },
-				},
+				url: `https://media.discordapp.net/stickers/${s.id}.webp`,
+				params: { size: String(STICKER_SIZE) },
 			});
 		}
 	}
@@ -152,7 +159,9 @@ const isExpiring = (url: string): boolean => {
 };
 
 const refreshUrls = async (items: MediaItem[]): Promise<MediaItem[]> => {
-	const expiring = items.flatMap(({ source }) => (source && isExpiring(source.url) ? [source.url] : []));
+	const expiring = items.flatMap((item) =>
+		item.kind !== 'unavailable' && isExpiring(item.url) ? [item.url] : [],
+	);
 	if (!expiring.length) {
 		return items;
 	}
@@ -170,11 +179,11 @@ const refreshUrls = async (items: MediaItem[]): Promise<MediaItem[]> => {
 	}
 
 	return items.map((item) => {
-		if (!item.source) {
+		if (item.kind === 'unavailable') {
 			return item;
 		}
-		const url = refreshed.get(item.source.url);
-		return url ? { ...item, source: { ...item.source, url } } : item;
+		const url = refreshed.get(item.url);
+		return url ? { ...item, url } : item;
 	});
 };
 

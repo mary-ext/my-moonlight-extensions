@@ -6,6 +6,7 @@ export const IpcChannel = {
 	Hook: 'mcpServer:hook',
 	Attach: 'mcpServer:attach',
 	GetLogs: 'mcpServer:getLogs',
+	SaveMedia: 'mcpServer:saveMedia',
 	/** the renderer is about to reload, route new calls to its replacement */
 	Leave: 'mcpServer:leave',
 	Relaunch: 'mcpServer:relaunch',
@@ -51,6 +52,14 @@ export interface LogPage {
 	nextId: number;
 	/** how many messages after `sinceId` were dropped from the buffer before they could be read */
 	dropped: number;
+}
+
+/** a media download request */
+export interface SaveMediaRequest {
+	/** HTTPS URL on Discord's CDN */
+	url: string;
+	/** file name, sanitized before saving */
+	name: string;
 }
 
 /** global symbol key for the renderer's tool bridge */
