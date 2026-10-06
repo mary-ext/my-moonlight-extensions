@@ -3,7 +3,7 @@ import { defineExtensionConfig } from '@mary-ext/moonlight-bundler';
 export default defineExtensionConfig({
 	manifest: {
 		id: 'mcpServer',
-		version: '0.2.4',
+		version: '0.2.5',
 		apiLevel: 2,
 		environment: 'desktop',
 		meta: {
