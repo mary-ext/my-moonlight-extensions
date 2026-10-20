@@ -267,8 +267,10 @@ export const formatMessage = (message: any, context: NameContext): string => {
 	lines.push(...formatBody(message, context));
 
 	for (const { message: snapshot } of message.messageSnapshots ?? []) {
-		lines.push(`  [forwarded from channel ${ref?.channel_id ?? 'unknown'}]`);
-		lines.push(...formatBody(snapshot, context).map((line) => `  ${line}`));
+		const channel = `channel ${ref?.channel_id ?? 'unknown'}`;
+		const source = ref?.message_id ? `message ${ref.message_id} in ${channel}` : channel;
+		lines.push(`  [forwarded from ${source}]`);
+		lines.push(...formatBody(snapshot, context).map((line) => indent(line, '  ')));
 	}
 
 	if (message.reactions?.length) {
