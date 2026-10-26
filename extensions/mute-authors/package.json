@@ -11,9 +11,9 @@
 	},
 	"devDependencies": {
 		"@mary-ext/moonlight-bundler": "workspace:*",
-		"@moonlight-mod/types": "^2026.9.1",
-		"@types/node": "^26.6.1",
+		"@moonlight-mod/types": "^2026.10.0",
+		"@types/node": "^26.6.5",
 		"@types/react": "^19.3.0",
-		"rolldown": "^1.2.9"
+		"rolldown": "^1.2.15"
 	}
 }
