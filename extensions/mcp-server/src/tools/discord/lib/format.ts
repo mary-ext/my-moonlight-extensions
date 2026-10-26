@@ -6,6 +6,16 @@ const MAX_EMBED_TEXT = 300;
 const MESSAGE_DEFAULT = 0;
 const MESSAGE_THREAD_CREATED = 18;
 const MESSAGE_REPLY = 19;
+const MESSAGE_CHAT_INPUT_COMMAND = 20;
+const MESSAGE_CONTEXT_MENU_COMMAND = 23;
+
+const INTERACTION_APPLICATION_COMMAND = 2;
+const INTERACTION_MESSAGE_COMPONENT = 3;
+const INTERACTION_MODAL_SUBMIT = 5;
+
+const COMMAND_CHAT_INPUT = 1;
+const COMMAND_USER = 2;
+const COMMAND_MESSAGE = 3;
 
 const MESSAGE_TYPES: Record<number, string> = {
 	1: 'recipient added',
@@ -224,6 +234,45 @@ const formatBody = (message: any, context: NameContext): string[] => {
 	return lines;
 };
 
+const formatInteraction = (metadata: any, context: NameContext): string | undefined => {
+	const by = metadata.user ? ` by ${formatUser(metadata.user, context)}` : '';
+
+	switch (metadata.type) {
+		case INTERACTION_APPLICATION_COMMAND: {
+			if (!metadata.name) {
+				return undefined;
+			}
+			switch (metadata.command_type) {
+				case COMMAND_CHAT_INPUT: {
+					// command options require a separate interaction-data request
+					return `[/${metadata.name} used${by}]`;
+				}
+				case COMMAND_USER: {
+					const target = metadata.target_user ? ` on ${formatUser(metadata.target_user, context)}` : '';
+					return `[user command "${metadata.name}" used${by}${target}]`;
+				}
+				case COMMAND_MESSAGE: {
+					const target = metadata.target_message_id ? ` on message ${metadata.target_message_id}` : '';
+					return `[message command "${metadata.name}" used${by}${target}]`;
+				}
+				default: {
+					return `[command "${metadata.name}" used${by}]`;
+				}
+			}
+		}
+		case INTERACTION_MESSAGE_COMPONENT: {
+			const target = metadata.interacted_message_id ? ` on message ${metadata.interacted_message_id}` : '';
+			return `[component interaction${by}${target}]`;
+		}
+		case INTERACTION_MODAL_SUBMIT: {
+			return `[modal submitted${by}]`;
+		}
+		default: {
+			return undefined;
+		}
+	}
+};
+
 /**
  * formats a message for a tool result.
  *
@@ -248,11 +297,16 @@ export const formatMessage = (message: any, context: NameContext): string => {
 
 	const lines = [header];
 
-	if (message.type !== MESSAGE_DEFAULT && message.type !== MESSAGE_REPLY) {
+	const interaction = message.interactionMetadata
+		? formatInteraction(message.interactionMetadata, context)
+		: undefined;
+	const isCommand =
+		message.type === MESSAGE_CHAT_INPUT_COMMAND || message.type === MESSAGE_CONTEXT_MENU_COMMAND;
+	if (message.type !== MESSAGE_DEFAULT && message.type !== MESSAGE_REPLY && !(isCommand && interaction)) {
 		lines.push(`  [${MESSAGE_TYPES[message.type] ?? `type ${message.type}`}]`);
 	}
-	if (message.interactionMetadata?.name) {
-		lines.push(`  [used /${message.interactionMetadata.name}]`);
+	if (interaction) {
+		lines.push(`  ${interaction}`);
 	}
 
 	const ref = message.messageReference;
